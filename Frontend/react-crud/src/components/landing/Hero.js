@@ -2,7 +2,7 @@ import React from 'react';
 import { ArrowRight, ShieldCheck, Clock, CheckCircle2, User, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
-import screenshotDashboard from '../../Screenshot 2026-05-27 235539.png';
+const screenshotDashboard = 'https://via.placeholder.com/800x600';
 
 export default function Hero({ onOpenDemo, onNavigate }) {
   const navigate = useNavigate();

@@ -1190,6 +1190,7 @@ app.MapHub<Backend.Hubs.NotificationHub>("/hub/notifications").RequireCors("Allo
 app.MapHub<Backend.Hubs.ScreenShareHub>("/hub/screenshare").RequireCors("AllowFrontend");
 app.MapHub<Backend.Hubs.ScreenShareHub>("/hub/screenshare");
 
+app.MapFallbackToFile("index.html");
 app.Run();
 
 public class UtcDateTimeConverter : System.Text.Json.Serialization.JsonConverter<DateTime>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import React from 'react';
 import { Sliders, Clock, HelpCircle, ShieldAlert, Sparkles, Monitor, AppWindow } from 'lucide-react';
-import screenshotPortal from '../../Screenshot 2026-05-19 204918.png';
+const screenshotPortal = 'https://via.placeholder.com/800x600';
 
 export default function PayrollModule() {
   // Calculator inputs in Indian Rupees (INR)

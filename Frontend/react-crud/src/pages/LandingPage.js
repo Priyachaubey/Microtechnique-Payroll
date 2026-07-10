@@ -9,7 +9,7 @@ import Footer from '../components/landing/Footer';
 import { TESTIMONIALS } from '../components/landing/data';
 import { Star, Quote, ArrowRight, ShieldCheck, Heart, UserCheck, LogOut } from 'lucide-react';
 import { useAuth } from '../AuthContext';
-import screenshotConfig from '../Screenshot (324).png';
+const screenshotConfig = 'https://via.placeholder.com/800x600';
 
 export default function LandingPage() {
   const [demoModalOpen, setDemoModalOpen] = useState(false);
