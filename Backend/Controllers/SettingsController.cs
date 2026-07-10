@@ -16,10 +16,12 @@ namespace Backend.Controllers
     public class SettingsController : ControllerBase
     {
         private readonly IDbConnection _db;
+        private readonly Backend.Services.IStorageService _storage;
 
-        public SettingsController(IDbConnection db)
+        public SettingsController(IDbConnection db, Backend.Services.IStorageService storage)
         {
             _db = db;
+            _storage = storage;
         }
 
         // GET /api/settings/payslip
@@ -91,20 +93,11 @@ namespace Backend.Controllers
                 string logoUrl = existingLogoUrl;
                 if (form.LogoFile != null && form.LogoFile.Length > 0)
                 {
-                    var wwwroot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-                    var folder = Path.Combine(wwwroot, "payslip-logo");
-                    Directory.CreateDirectory(folder);
-
                     var ext = Path.GetExtension(form.LogoFile.FileName);
                     var fileName = $"logo_space_{spaceId}_{DateTime.UtcNow.Ticks}{ext}";
-                    var filePath = Path.Combine(folder, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await form.LogoFile.CopyToAsync(stream);
-                    }
-
-                    logoUrl = $"/payslip-logo/{fileName}";
+                    
+                    logoUrl = await _storage.SaveFileAsync(form.LogoFile, "payslip-logo", fileName);
+                    if (!logoUrl.StartsWith("/")) logoUrl = "/" + logoUrl;
                 }
 
                 var sql = @"

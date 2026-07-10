@@ -27,6 +27,16 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(optio
     options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50 MB
 });
 
+// Configure Storage Service
+if (!string.IsNullOrEmpty(builder.Configuration["AWS:AccessKey"]))
+{
+    builder.Services.AddSingleton<Backend.Services.IStorageService, Backend.Services.S3StorageService>();
+}
+else
+{
+    builder.Services.AddSingleton<Backend.Services.IStorageService, Backend.Services.LocalFileStorageService>();
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",

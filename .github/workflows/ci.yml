@@ -1,0 +1,59 @@
+name: Backend and Frontend Build CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+
+    - name: Restore dependencies for Backend
+      run: dotnet restore
+      working-directory: ./Backend
+
+    - name: Build Backend
+      run: dotnet build --no-restore --configuration Release
+      working-directory: ./Backend
+
+    - name: Test Backend (if any)
+      run: dotnet test --no-build --verbosity normal
+      working-directory: ./Backend
+      continue-on-error: true
+
+    - name: Install Frontend Dependencies
+      run: npm install
+      working-directory: ./Frontend/react-crud
+
+    - name: Build Frontend
+      run: npm run build
+      working-directory: ./Frontend/react-crud
+      env:
+        CI: false
+
+    - name: Bundle Deployment Package
+      run: |
+        mkdir -p deploy/wwwroot
+        cp -r Backend/bin/Release/net8.0/* deploy/
+        cp -r Frontend/react-crud/build/* deploy/wwwroot/
+        
+    - name: Upload Deployment Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: DeploymentPackage
+        path: deploy/

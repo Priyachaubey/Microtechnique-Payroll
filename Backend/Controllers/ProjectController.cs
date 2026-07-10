@@ -14,10 +14,12 @@ using Backend.Services;
 public class ProjectController : ControllerBase
 {
     private readonly IProjectService _projectService;
+    private readonly IStorageService _storage;
 
-    public ProjectController(IProjectService projectService)
+    public ProjectController(IProjectService projectService, IStorageService storage)
     {
         _projectService = projectService;
+        _storage = storage;
     }
 
     private int GetEmpId()
@@ -413,24 +415,16 @@ public class ProjectController : ControllerBase
             if (file.Length > 50 * 1024 * 1024) // 50 MB limit
                 return BadRequest(new { message = "File size must be under 50 MB." });
 
-            var webRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-            var folder = Path.Combine(webRoot, "project-files");
-            Directory.CreateDirectory(folder);
-
             var ext = Path.GetExtension(file.FileName);
             var safeName = Path.GetFileNameWithoutExtension(file.FileName);
-            safeName = string.Concat(safeName.Split(Path.GetInvalidFileNameChars()));
             
             // Unique file name to prevent overwrites
             var uniqueName = $"{projectId}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}_{safeName}{ext}";
-            var filePath = Path.Combine(folder, uniqueName);
+            
+            var relativeUrl = await _storage.SaveFileAsync(file, "project-files", uniqueName);
+            if (!relativeUrl.StartsWith("/")) relativeUrl = "/" + relativeUrl;
 
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-
-            var relativeUrl = $"/project-files/{uniqueName}";
+            // Save metadata to database
             var fileId = await _projectService.AddProjectFileAsync(projectId, file.FileName, relativeUrl, spaceId, role);
 
             return Ok(new { message = "File uploaded successfully.", fileId, fileName = file.FileName, filePath = relativeUrl });

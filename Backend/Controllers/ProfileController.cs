@@ -20,12 +20,14 @@ public class ProfileController : ControllerBase
     private readonly IProfileRepository _profileRepo;
     private readonly IUserService _userService;
     private readonly IWebHostEnvironment _env;
+    private readonly IStorageService _storage;
 
-    public ProfileController(IProfileRepository profileRepo, IUserService userService, IWebHostEnvironment env)
+    public ProfileController(IProfileRepository profileRepo, IUserService userService, IWebHostEnvironment env, IStorageService storage)
     {
         _profileRepo = profileRepo;
         _userService = userService;
         _env = env;
+        _storage = storage;
     }
 
     private int GetEmpId()
@@ -70,16 +72,11 @@ public class ProfileController : ControllerBase
         if (profile == null || string.IsNullOrEmpty(profile.ProfilePhotoUrl))
             return NotFound();
 
-        var fileName = Path.GetFileName(profile.ProfilePhotoUrl);
-        var webRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-        var filePath = Path.Combine(webRoot, "profile-photo", fileName);
+        var photoBytes = await _storage.ReadFileAsync(profile.ProfilePhotoUrl);
+        if (photoBytes == null)
+            return NotFound(new { message = "Profile photo not found." });
 
-        if (!System.IO.File.Exists(filePath))
-            return NotFound();
-
-        var bytes = await System.IO.File.ReadAllBytesAsync(filePath);
-        
-        var ext = Path.GetExtension(filePath).ToLower();
+        var ext = Path.GetExtension(profile.ProfilePhotoUrl).ToLower();
         var contentType = ext switch
         {
             ".png" => "image/png",
@@ -89,7 +86,7 @@ public class ProfileController : ControllerBase
             _ => "application/octet-stream"
         };
 
-        return File(bytes, contentType);
+        return File(photoBytes, contentType);
     }
 
     // GET /api/Profile/me
@@ -193,22 +190,17 @@ public class ProfileController : ControllerBase
         if (file.Length > 5 * 1024 * 1024)
             return BadRequest(new { message = "File size must be under 5 MB." });
 
-        var webRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-        var folder = Path.Combine(webRoot, "profile-photo");
-        Directory.CreateDirectory(folder);
-
         var ext = Path.GetExtension(file.FileName).ToLower();
         var fileName = $"emp_{empId}_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}{ext}";
-        var filePath = Path.Combine(folder, fileName);
+        
+        var relativeUrl = await _storage.SaveFileAsync(file, "profile-photo", fileName);
 
-        using (var stream = new FileStream(filePath, FileMode.Create))
-            await file.CopyToAsync(stream);
+        // Ensure leading slash for frontend path resolution
+        if (!relativeUrl.StartsWith("/")) relativeUrl = "/" + relativeUrl;
 
-        // Store relative URL path in DB
-        var relativeUrl = $"/profile-photo/{fileName}";
         await _profileRepo.UpdateProfilePhotoAsync(empId, relativeUrl);
 
-        return Ok(new { message = "Photo uploaded successfully.", photoUrl = $"/api/Profile/photo/{empId}" });
+        return Ok(new { message = "Photo uploaded successfully.", photoUrl = relativeUrl });
     }
 
     // POST /api/Profile/documents
@@ -244,10 +236,6 @@ public class ProfileController : ControllerBase
             if (f.Length > 10 * 1024 * 1024)
                 return BadRequest(new { message = $"File '{f.FileName}' exceeds 10 MB limit." });
 
-        var webRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-        var folder = Path.Combine(webRoot, "Document");
-        Directory.CreateDirectory(folder);
-
         var savedDocs = new List<object>();
 
         for (int i = 0; i < documentTypes.Count; i++)
@@ -256,12 +244,9 @@ public class ProfileController : ControllerBase
             var ext = Path.GetExtension(file.FileName).ToLower();
             var safeType = string.Concat(documentTypes[i].Trim().Split(Path.GetInvalidFileNameChars()));
             var fileName = $"emp_{empId}_{safeType}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{ext}";
-            var filePath = Path.Combine(folder, fileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-                await file.CopyToAsync(stream);
-
-            var relativeUrl = $"/Document/{fileName}";
+            
+            var relativeUrl = await _storage.SaveFileAsync(file, "Document", fileName);
+            if (!relativeUrl.StartsWith("/")) relativeUrl = "/" + relativeUrl;
 
             var doc = new DocumentRecord
             {
@@ -364,3 +349,4 @@ public class ChangePasswordRequest
     public string OldPassword { get; set; } = string.Empty;
     public string NewPassword { get; set; } = string.Empty;
 }
+
