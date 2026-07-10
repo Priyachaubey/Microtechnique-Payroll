@@ -142,6 +142,17 @@ builder.Services.AddHostedService<Backend.Services.MonthEndHostedService>();
 
 var app = builder.Build();
 
+// 1. Auto-initialize the database (runs full SQL seed if completely empty)
+try
+{
+    var initializer = new Backend.Services.DatabaseInitializer(app.Configuration);
+    await initializer.InitializeAsync();
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"[DatabaseInitializer Error] {ex.Message}");
+}
+
 // Run DB Reorganization to fix UUID/Integer column issues automatically
 try
 {
