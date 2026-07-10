@@ -343,6 +343,24 @@ VALUES (
 )
 ON CONFLICT (email) DO NOTHING;
 
+-- Seed custom SuperAdmin (Ashutosh Pandey)
+INSERT INTO t_superadmins (
+    email,
+    passwordhash,
+    name,
+    created_at,
+    updated_at
+)
+VALUES (
+    'ashutoshpandey@microtechniqueit.com',
+    'Ashu@1904',
+    'Ashutosh Pandey',
+    NOW(),
+    NOW()
+)
+ON CONFLICT (email) DO UPDATE SET
+    passwordhash = EXCLUDED.passwordhash;
+
 -- Seed custom SuperAdmin
 INSERT INTO t_superadmins (
     email,
@@ -407,6 +425,23 @@ VALUES (
 ON CONFLICT (email) DO UPDATE SET
     passwordhash = EXCLUDED.passwordhash,
     status = 'Active';
+
+-- Custom Admin (Ashutosh Pandey)
+INSERT INTO t_users (
+    empid, spaceid, name, email, passwordhash, gender, status, role,
+    dateofjoining, is_approved, statusbysuperadmin
+)
+VALUES (
+    3, 1, 'Ashutosh Pandey', 'ashutoshpandey@microtechniqueit.com',
+    'Ashu@1904',
+    'Male', 'Active', 'Admin', CURRENT_DATE, TRUE, TRUE
+)
+ON CONFLICT (email) DO UPDATE SET
+    passwordhash = EXCLUDED.passwordhash,
+    status = 'Active',
+    statusbysuperadmin = TRUE,
+    role = 'Admin',
+    is_approved = TRUE;
 
 -- Keep the empid sequence ahead of our manually-numbered seed rows so the
 -- next SERIAL-generated empid doesn't collide with id 1 or 2.

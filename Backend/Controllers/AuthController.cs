@@ -68,23 +68,40 @@ public class AuthController : ControllerBase
 
                 // Verify SuperAdmin password
                 var superHasher = new Microsoft.AspNetCore.Identity.PasswordHasher<object>();
-                Microsoft.AspNetCore.Identity.PasswordVerificationResult verifySuperResult;
+                Microsoft.AspNetCore.Identity.PasswordVerificationResult verifySuperResult = Microsoft.AspNetCore.Identity.PasswordVerificationResult.Failed;
                 try
                 {
                     verifySuperResult = superHasher.VerifyHashedPassword(new object(), superAdmin.PasswordHash, request.Password);
                 }
                 catch (Exception hashEx)
                 {
-                    // Thrown when passwordhash in t_superadmins is not a valid PBKDF2/Base64 hash (e.g. corrupted seed data)
-                    Console.WriteLine($"[Login] SuperAdmin hash format error for '{emailForLookup}': {hashEx.Message}");
-                    return Unauthorized(new { message = "Invalid email or password" });
+                    // Thrown when passwordhash in t_superadmins is not a valid PBKDF2/Base64 hash (e.g. corrupted seed data or plaintext)
+                    Console.WriteLine($"[Login] SuperAdmin hash format error for '{emailForLookup}', checking plaintext fallback... {hashEx.Message}");
                 }
 
                 if (verifySuperResult != Microsoft.AspNetCore.Identity.PasswordVerificationResult.Success &&
                     verifySuperResult != Microsoft.AspNetCore.Identity.PasswordVerificationResult.SuccessRehashNeeded)
                 {
-                    Console.WriteLine($"[Login] FAILED - SuperAdmin '{emailForLookup}' found, but password did not match stored hash.");
-                    return Unauthorized(new { message = "Invalid email or password" });
+                    // Fallback plain-text check for SuperAdmin
+                    if (superAdmin.PasswordHash.Trim() == request.Password.Trim())
+                    {
+                        try
+                        {
+                            string secureHash = superHasher.HashPassword(new object(), request.Password);
+                            superAdmin.PasswordHash = secureHash;
+                            await _superAdminRepository.UpdateSuperAdminAsync(superAdmin);
+                            System.Console.WriteLine($"[Auth Migration] Automatically migrated legacy plain-text password to secure hash for SuperAdmin {superAdmin.Email}");
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Console.WriteLine($"[Auth Migration Error] Failed to auto-migrate password hash for SuperAdmin {superAdmin.Email}: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[Login] FAILED - SuperAdmin '{emailForLookup}' found, but password did not match stored hash.");
+                        return Unauthorized(new { message = "Invalid email or password" });
+                    }
                 }
 
                 Console.WriteLine($"[Login] SUCCESS - SuperAdmin '{emailForLookup}' authenticated.");
