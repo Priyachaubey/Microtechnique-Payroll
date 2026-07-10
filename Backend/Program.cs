@@ -363,7 +363,35 @@ try
             ALTER TABLE t_users ADD COLUMN IF NOT EXISTS dateofjoining DATE DEFAULT CURRENT_DATE;", conn))
         {
             migrateUsersCmd.ExecuteNonQuery();
-            System.Console.WriteLine("[Database Reorganization] Verified t_users schema columns exist.");
+            
+            var checkTUsers = @"
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 't_users';
+            ";
+            using var cmdCheckUserCols = new NpgsqlCommand(checkTUsers, conn);
+            using var readerUserCols = cmdCheckUserCols.ExecuteReader();
+            bool hasStatusBySuperAdmin = false;
+            while (readerUserCols.Read())
+            {
+                var colName = readerUserCols.GetString(0).ToLower();
+                if (colName == "statusbysuperadmin") hasStatusBySuperAdmin = true;
+            }
+            readerUserCols.Close();
+
+            if (!hasStatusBySuperAdmin)
+            {
+                var addCol = "ALTER TABLE t_users ADD COLUMN statusbysuperadmin BOOLEAN DEFAULT FALSE;";
+                using var cmdAdd = new NpgsqlCommand(addCol, conn);
+                cmdAdd.ExecuteNonQuery();
+            }
+
+            // [HOTFIX] Auto-approve all existing admins to prevent login lockouts
+            var approveAdmins = "UPDATE t_users SET statusbysuperadmin = TRUE WHERE role = 'Admin';";
+            using var cmdApprove = new NpgsqlCommand(approveAdmins, conn);
+            cmdApprove.ExecuteNonQuery();
+
+            System.Console.WriteLine("[Database Reorganization] Verified t_users schema columns exist and auto-approved existing admins.");
         }
 
         // Create t_worklogs table if missing
