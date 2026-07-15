@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '../components/AppLayout';
-import { noticesApi } from '../api/index';
+import { noticesApi, usersApi } from '../api/index';
 import { useAuth } from '../AuthContext';
 import toast from 'react-hot-toast';
 
@@ -38,7 +38,8 @@ export default function QueriesPage({ isAdmin }) {
 
   // Notice creation form state (Admin-only)
   const [showNoticeForm, setShowNoticeForm] = useState(false);
-  const [noticeForm, setNoticeForm] = useState({ text: '', type: 'Notice' });
+  const [noticeForm, setNoticeForm] = useState({ text: '', type: 'Notice', targetEmpId: '' });
+  const [employees, setEmployees] = useState([]);
 
   const fetchQueries = async () => {
     try {
@@ -72,10 +73,22 @@ export default function QueriesPage({ isAdmin }) {
     }
   };
 
+  const fetchEmployees = async () => {
+    try {
+      const res = await usersApi.getCompanyUsers();
+      setEmployees(res.data || []);
+    } catch (e) {
+      console.warn('Failed to load employees', e);
+    }
+  };
+
   useEffect(() => {
     if (!user?.spaceId) return;
     fetchQueries();
     fetchNotices();
+    if (user?.role === 'Admin') {
+      fetchEmployees();
+    }
   }, [user]);
 
   const validateQuery = () => {
@@ -154,10 +167,11 @@ export default function QueriesPage({ isAdmin }) {
         adminId: user?.empId,
         spaceId: user?.spaceId,
         noticeText: noticeForm.text,
-        toType: noticeForm.type
+        toType: noticeForm.type,
+        employeeId: noticeForm.targetEmpId ? parseInt(noticeForm.targetEmpId) : null
       });
       toast.success(`${noticeForm.type} published successfully!`);
-      setNoticeForm({ text: '', type: 'Notice' });
+      setNoticeForm({ text: '', type: 'Notice', targetEmpId: '' });
       setShowNoticeForm(false);
       fetchNotices();
     } catch {
@@ -198,8 +212,9 @@ export default function QueriesPage({ isAdmin }) {
 
         {/* Queries tab */}
         {tab === 'queries' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: 20, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? '1fr' : '380px 1fr', gap: 20, alignItems: 'start' }}>
             {/* Raise query form */}
+            {!isAdmin && (
             <div className="card">
               <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Raise a Query</h3>
               <form onSubmit={handleRaiseQuery} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -242,6 +257,7 @@ export default function QueriesPage({ isAdmin }) {
                 </button>
               </form>
             </div>
+            )}
 
             {/* Query list */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -391,6 +407,24 @@ export default function QueriesPage({ isAdmin }) {
                       <option value="Notice">Office Announcement (Notice)</option>
                       <option value="Warning">Official Warning</option>
                     </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Target Employee (Optional)</label>
+                    <input 
+                      type="text" 
+                      list="employeeNoticeList" 
+                      className="form-input" 
+                      placeholder="Leave blank for entire workspace, or type Employee ID..." 
+                      value={noticeForm.targetEmpId} 
+                      onChange={e => setNoticeForm(p => ({ ...p, targetEmpId: e.target.value }))} 
+                    />
+                    <datalist id="employeeNoticeList">
+                      {employees.map(m => (
+                        <option key={m.empId} value={m.empId}>
+                          {m.name || m.email?.split('@')[0]} ({m.role})
+                        </option>
+                      ))}
+                    </datalist>
                   </div>
                   <div className="form-group">
                     <label className="form-label">Content</label>

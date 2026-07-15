@@ -216,3 +216,45 @@ export const incentivesApi = {
     apiClient.delete(`/incentives/${id}`),
 };
 
+export const complianceApi = {
+  getSettings: () => apiClient.get('/Compliance/settings'),
+  updateSettings: (data) => apiClient.post('/Compliance/settings', data),
+  getFilings: () => apiClient.get('/Compliance/filings'),
+  addFiling: (data) => apiClient.post('/Compliance/filings', data),
+  updateFiling: (id, data) => apiClient.put(`/Compliance/filings/${id}`, data),
+  deleteFiling: (id) => apiClient.delete(`/Compliance/filings/${id}`),
+};
+
+export const reimbursementApi = {
+  getMyClaims: () => apiClient.get('/Reimbursement/my'),
+  getAllClaims: () => apiClient.get('/Reimbursement/all'),
+  applyClaim: (data) => apiClient.post('/Reimbursement', data),
+  updateStatus: (id, status) => apiClient.put(`/Reimbursement/${id}/status`, { status }),
+};
+
+export const recruitmentApi = {
+  getJobs: () => apiClient.get('/Recruitment/jobs'),
+  createJob: (data) => apiClient.post('/Recruitment/jobs', data),
+  getApplications: () => apiClient.get('/Recruitment/applications'),
+  addApplication: (data) => apiClient.post('/Recruitment/applications', data),
+  updateApplicationStatus: (id, status) => apiClient.put(`/Recruitment/applications/${id}/status`, { status }),
+  updateJobStatus: (jobId, status, assignee) =>
+    apiClient.put(`/recruitment/jobs/${jobId}/status`, { status, assignee })
+};
+
+export const assetApi = {
+  getAssets: () => apiClient.get('/Asset'),
+  getMyAssets: () => apiClient.get('/Asset/my'),
+  createAsset: (data) => apiClient.post('/Asset', data),
+  assignAsset: (id, empId) => apiClient.put(`/Asset/${id}/assign`, { empId }),
+  deleteAsset: (id) => apiClient.delete(`/Asset/${id}`)
+};
+
+export const supportApi = {
+  getTickets: () => apiClient.get('/Support'),
+  createTicket: (data) => apiClient.post('/Support', data),
+  getReplies: (id) => apiClient.get(`/Support/${id}/replies`),
+  addReply: (id, data) => apiClient.post(`/Support/${id}/replies`, data),
+  updateStatus: (id, status) => apiClient.put(`/Support/${id}/status`, { status }),
+};
+

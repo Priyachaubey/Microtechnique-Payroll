@@ -13,4 +13,5 @@ public class Attendance
     public int? EarlyExitMinutes { get; set; }
     public decimal? BreakHours { get; set; }
     public DateTime? CreatedAt { get; set; }
+    public string? VerificationMode { get; set; }
 }

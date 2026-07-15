@@ -46,13 +46,17 @@ public class UserController : ControllerBase
 
     private int GetSpaceId()
     {
+        var claim = User.FindFirst("SpaceId")?.Value;
+        if (int.TryParse(claim, out var id) && id > 0)
+        {
+            return id;
+        }
         var role = GetRole();
         if (role == "Admin")
         {
             return GetEmpId();
         }
-        var claim = User.FindFirst("SpaceId")?.Value;
-        return int.TryParse(claim, out var id) ? id : 0;
+        return 0;
     }
 
     private string GetRole() => User.FindFirst(ClaimTypes.Role)?.Value ?? "";

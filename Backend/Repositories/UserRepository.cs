@@ -17,19 +17,24 @@ public class UserRepository : IUserRepository
 
     public async Task<IEnumerable<User>> GetAllUsersAsync()
     {
-        var query = @"SELECT empid, name, spaceid, email, passwordhash, gender, status, role, 
-                             phone, address, COALESCE(dateofjoining, CURRENT_DATE)::timestamp AS dateofjoining,
-                             accountnumber, bankname, accountholdername, ifsccode, upiid, backupemail 
-                      FROM t_users";
+        var query = @"SELECT u.empid, u.name, u.spaceid, u.email, u.passwordhash, u.gender, u.status, u.role, 
+                             u.phone, u.address, COALESCE(u.dateofjoining, CURRENT_DATE)::timestamp AS dateofjoining,
+                             u.accountnumber, u.bankname, u.accountholdername, u.ifsccode, u.upiid, u.backupemail,
+                             u.departmentid, d.name AS departmentname
+                      FROM t_users u
+                      LEFT JOIN t_departments d ON u.departmentid = d.departmentid";
         return await _dbConnection.QueryAsync<User>(query);
     }
 
     public async Task<User?> GetUserByIdAsync(int empid)
     {
-        var query = @"SELECT empid, name, spaceid, email, passwordhash, gender, status, role, 
-                             phone, address, COALESCE(dateofjoining, CURRENT_DATE)::timestamp AS dateofjoining,
-                             accountnumber, bankname, accountholdername, ifsccode, upiid, backupemail 
-                      FROM t_users WHERE empid = @EmpId";
+        var query = @"SELECT u.empid, u.name, u.spaceid, u.email, u.passwordhash, u.gender, u.status, u.role, 
+                             u.phone, u.address, COALESCE(u.dateofjoining, CURRENT_DATE)::timestamp AS dateofjoining,
+                             u.accountnumber, u.bankname, u.accountholdername, u.ifsccode, u.upiid, u.backupemail,
+                             u.departmentid, d.name AS departmentname
+                      FROM t_users u
+                      LEFT JOIN t_departments d ON u.departmentid = d.departmentid 
+                      WHERE u.empid = @EmpId";
         return await _dbConnection.QueryFirstOrDefaultAsync<User>(query, new { EmpId = empid });
     }
 
@@ -37,44 +42,48 @@ public class UserRepository : IUserRepository
     {
         var query = @"
         SELECT 
-            empid,
-            name,
-            spaceid,
-            email,
-            passwordhash,
-            gender,
-            status,
-            role,
-            phone,
-            address,
-            COALESCE(dateofjoining, CURRENT_DATE)::timestamp as dateofjoining,
-            accountnumber,
-            bankname,
-            accountholdername,
-            ifsccode,
-            upiid,
-            backupemail,
-            COALESCE(statusbysuperadmin, FALSE) AS statusbysuperadmin
-        FROM t_users
-        WHERE LOWER(email) = LOWER(@Email)";
+            u.empid,
+            u.name,
+            u.spaceid,
+            u.email,
+            u.passwordhash,
+            u.gender,
+            u.status,
+            u.role,
+            u.phone,
+            u.address,
+            COALESCE(u.dateofjoining, CURRENT_DATE)::timestamp as dateofjoining,
+            u.accountnumber,
+            u.bankname,
+            u.accountholdername,
+            u.ifsccode,
+            u.upiid,
+            u.backupemail,
+            COALESCE(u.statusbysuperadmin, FALSE) AS statusbysuperadmin,
+            u.departmentid, d.name AS departmentname
+        FROM t_users u
+        LEFT JOIN t_departments d ON u.departmentid = d.departmentid
+        WHERE LOWER(u.email) = LOWER(@Email)";
         return await _dbConnection.QueryFirstOrDefaultAsync<User>(query, new { Email = email });
     }
 
     public async Task<IEnumerable<User>> SearchUsersAsync(string searchTerm)
     {
-        var query = @"SELECT empid, name, spaceid, email, passwordhash, gender, status, role, 
-                             phone, address, COALESCE(dateofjoining, CURRENT_DATE)::timestamp AS dateofjoining,
-                             accountnumber, bankname, accountholdername, ifsccode, upiid, backupemail 
-                      FROM t_users 
-                      WHERE email ILIKE @SearchTerm OR role ILIKE @SearchTerm";
+        var query = @"SELECT u.empid, u.name, u.spaceid, u.email, u.passwordhash, u.gender, u.status, u.role, 
+                             u.phone, u.address, COALESCE(u.dateofjoining, CURRENT_DATE)::timestamp AS dateofjoining,
+                             u.accountnumber, u.bankname, u.accountholdername, u.ifsccode, u.upiid, u.backupemail,
+                             u.departmentid, d.name AS departmentname
+                      FROM t_users u
+                      LEFT JOIN t_departments d ON u.departmentid = d.departmentid 
+                      WHERE u.email ILIKE @SearchTerm OR u.role ILIKE @SearchTerm OR u.name ILIKE @SearchTerm";
         return await _dbConnection.QueryAsync<User>(query, new { SearchTerm = $"%{searchTerm}%" });
     }
 
     public async Task<int> CreateUserAsync(User user)
     {
         var query = @"
-            INSERT INTO t_users (name, spaceid, email, passwordhash, gender, status, role, phone, address, dateofjoining, backupemail) 
-            VALUES (@Name, @SpaceId, @Email, @PasswordHash, @Gender, @Status, @Role, @Phone, @Address, @DateOfJoining, @BackupEmail) 
+            INSERT INTO t_users (name, spaceid, email, passwordhash, gender, status, role, phone, address, dateofjoining, backupemail, departmentid) 
+            VALUES (@Name, @SpaceId, @Email, @PasswordHash, @Gender, @Status, @Role, @Phone, @Address, @DateOfJoining, @BackupEmail, @DepartmentId) 
             RETURNING empid;";
         return await _dbConnection.ExecuteScalarAsync<int>(query, user);
     }
@@ -88,7 +97,8 @@ public class UserRepository : IUserRepository
                 email = @Email, 
                 gender = @Gender, 
                 status = @Status, 
-                role = @Role 
+                role = @Role,
+                departmentid = @DepartmentId
             WHERE empid = @EmpId";
         var result = await _dbConnection.ExecuteAsync(query, user);
         return result > 0;
@@ -188,32 +198,35 @@ public class UserRepository : IUserRepository
     {
         try
         {
-            // Robust multi-path company query:
-            // 1. Try to resolve adminId via: empId → spaceid → adminid
-            // 2. Fallback: treat empId itself as adminId (covers Admin users whose spaceid may be null)
-            // This handles: NULL spaceid, Admin users, and normal employee paths
+            // Robust 3-path company query for all role types:
+            // Path 1 (Admin): The caller IS an admin — fetch all users in spaces where adminid = empId
+            // Path 2 (Employee/Manager/TL): The caller has a spaceid → resolve adminid from that space
+            //                               → then fetch all users in spaces under that same admin
+            // Both paths are UNION'd so at least one always resolves.
             var query = @"
-                SELECT u.empid, u.name, u.spaceid, u.email, u.gender, u.status, u.role, 
+                SELECT DISTINCT u.empid, u.name, u.spaceid, u.email, u.gender, u.status, u.role, 
                        u.phone, u.address, COALESCE(u.dateofjoining, CURRENT_DATE)::timestamp AS dateofjoining,
                        u.accountnumber, u.bankname, u.accountholdername, u.ifsccode, u.upiid, u.backupemail
                 FROM t_users u
                 INNER JOIN t_spaces s ON u.spaceid = s.spaceid
-                WHERE s.adminid = COALESCE(
-                    -- Path 1: Employee has a spaceid → resolve adminid from that space
-                    (
-                        SELECT s2.adminid
-                        FROM t_spaces s2
-                        INNER JOIN t_users u2 ON u2.spaceid = s2.spaceid
-                        WHERE u2.empid = @EmpId
-                        LIMIT 1
-                    ),
-                    -- Path 2: User may be an Admin whose own empid IS an adminid
-                    -- (covers Admin users where spaceid is null or not yet synced)
-                    (
-                        SELECT adminid FROM t_spaces WHERE adminid = @EmpId LIMIT 1
-                    )
+                WHERE s.adminid = @EmpId
+
+                UNION
+
+                SELECT DISTINCT u.empid, u.name, u.spaceid, u.email, u.gender, u.status, u.role, 
+                       u.phone, u.address, COALESCE(u.dateofjoining, CURRENT_DATE)::timestamp AS dateofjoining,
+                       u.accountnumber, u.bankname, u.accountholdername, u.ifsccode, u.upiid, u.backupemail
+                FROM t_users u
+                INNER JOIN t_spaces s ON u.spaceid = s.spaceid
+                WHERE s.adminid = (
+                    SELECT s2.adminid
+                    FROM t_spaces s2
+                    INNER JOIN t_users u2 ON u2.spaceid = s2.spaceid
+                    WHERE u2.empid = @EmpId
+                    LIMIT 1
                 )
-                ORDER BY u.empid
+
+                ORDER BY empid
             ";
 
             var users = await _dbConnection.QueryAsync<User>(query, new { EmpId = empId });

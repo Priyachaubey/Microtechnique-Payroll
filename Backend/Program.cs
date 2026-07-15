@@ -907,6 +907,21 @@ try
                 System.Console.WriteLine("[SuperAdmin Panel] Seeded custom superadmin account: microtechnique09@gmail.com");
             }
 
+            using (var cmdGlobalConfig = new NpgsqlCommand(@"
+                CREATE TABLE IF NOT EXISTS t_global_configs (
+                    config_key VARCHAR(100) PRIMARY KEY,
+                    config_value VARCHAR(255) NOT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                INSERT INTO t_global_configs (config_key, config_value)
+                VALUES ('employee_price_inr', '99')
+                ON CONFLICT (config_key) DO NOTHING;
+            ", conn))
+            {
+                cmdGlobalConfig.ExecuteNonQuery();
+                System.Console.WriteLine("[SuperAdmin Panel] t_global_configs table verified/created and seeded.");
+            }
+
             using (var cmdCheck = new NpgsqlCommand("SELECT COUNT(1) FROM t_superadmins;", conn))
             {
                 var count = Convert.ToInt32(cmdCheck.ExecuteScalar());
@@ -927,6 +942,15 @@ try
             }
 
             // --- PRODUCTION-READY SECURITY & FEATURE MIGRATIONS (2026) ---
+            using (var cmdSecureAttendance = new NpgsqlCommand(@"
+                ALTER TABLE t_attendance ADD COLUMN IF NOT EXISTS verification_mode VARCHAR(50) DEFAULT 'Web';
+                ALTER TABLE t_users ADD COLUMN IF NOT EXISTS biometric_key TEXT;
+            ", conn))
+            {
+                cmdSecureAttendance.ExecuteNonQuery();
+                System.Console.WriteLine("[Biometrics] Added secure attendance verification columns to database.");
+            }
+
             using (var cmdFeatures = new NpgsqlCommand(@"
                 -- 1. Screenshot Tracking Config Table
                 CREATE TABLE IF NOT EXISTS screenshot_config (

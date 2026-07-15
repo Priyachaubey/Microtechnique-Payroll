@@ -39,9 +39,10 @@ export default function UsersPage() {
   const [statusModal, setStatusModal] = useState(null);
   const [newStatus, setNewStatus] = useState('');
   const [statusReason, setStatusReason] = useState('');
-  const [newUser, setNewUser] = useState({ name: '', email: '', role: 'Employee', spaceId: '', password: '' });
-  const [editUser, setEditUser] = useState({ name: '', email: '', role: 'Employee', spaceId: '' });
+  const [newUser, setNewUser] = useState({ name: '', email: '', role: 'Employee', spaceId: '', departmentId: '', password: '' });
+  const [editUser, setEditUser] = useState({ name: '', email: '', role: 'Employee', spaceId: '', departmentId: '' });
   const [spaces, setSpaces] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [warnReason, setWarnReason] = useState('');
   const [profileDrawerEmpId, setProfileDrawerEmpId] = useState(null);
   const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
@@ -99,8 +100,23 @@ export default function UsersPage() {
       })
       .catch(() => setUsers([]))
       .finally(() => setLoading(false));
+      
+    // Fetch departments if admin
+    if (isAdmin) {
+      import('axios').then(axios => {
+        const token = localStorage.getItem('token');
+        import('../config').then(({ SERVER_URL }) => {
+          axios.default.get(`${SERVER_URL}/api/Department`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).then(res => {
+            setDepartments(res.data || []);
+          }).catch(console.error);
+        });
+      });
+    }
+
     return () => controller.abort();
-  }, [fetchUsers]);
+  }, [fetchUsers, isAdmin]);
 
   useEffect(() => {
     if (isAdmin) {
@@ -170,10 +186,10 @@ export default function UsersPage() {
       toast.error('Password must be at least 6 characters long!');
       return;
     }
-    const user = { ...newUser, empId: Date.now(), status: 'active' };
+    const user = { ...newUser, empId: Date.now(), status: 'active', departmentId: parseInt(newUser.departmentId) || null };
     setUsers(prev => [...prev, user]);
     try {
-      await usersApi.createUser({ ...newUser, spaceId: parseInt(newUser.spaceId) });
+      await usersApi.createUser({ ...newUser, spaceId: parseInt(newUser.spaceId), departmentId: parseInt(newUser.departmentId) || null });
       toast.success('Employee added!');
       // Reload using role-correct API
       fetchUsers().then(r => {
@@ -182,7 +198,7 @@ export default function UsersPage() {
       }).catch(() => setUsers([]));
     } catch { toast.error('Failed to add employee.'); setUsers(prev => prev.filter(u => u.empId !== user.empId)); }
     setAddModal(false);
-    setNewUser({ name: '', email: '', role: 'Employee', spaceId: '', password: '' });
+    setNewUser({ name: '', email: '', role: 'Employee', spaceId: '', departmentId: '', password: '' });
   };
 
   const handleEditUser = async (e) => {
@@ -193,7 +209,8 @@ export default function UsersPage() {
         name: editUser.name,
         email: editUser.email,
         role: editUser.role,
-        spaceId: parseInt(editUser.spaceId)
+        spaceId: parseInt(editUser.spaceId),
+        departmentId: parseInt(editUser.departmentId) || null
       };
       await usersApi.updateUser(editModal.empId, payload);
       toast.success('Employee updated!');
@@ -384,7 +401,7 @@ export default function UsersPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Employee</th><th>Role</th><th>Space ID</th><th>Status</th><th>Actions</th>
+                  <th>Employee</th><th>Role</th><th>Space ID</th><th>Department</th><th>Status</th><th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -402,12 +419,13 @@ export default function UsersPage() {
                       </td>
                       <td><div className="skeleton animate-pulse" style={{ width: 60, height: 18, background: 'var(--gray-200)', borderRadius: 4 }} /></td>
                       <td><div className="skeleton animate-pulse" style={{ width: 40, height: 14, background: 'var(--gray-200)', borderRadius: 4 }} /></td>
+                      <td><div className="skeleton animate-pulse" style={{ width: 80, height: 14, background: 'var(--gray-200)', borderRadius: 4 }} /></td>
                       <td><div className="skeleton animate-pulse" style={{ width: 50, height: 18, background: 'var(--gray-200)', borderRadius: 4 }} /></td>
                       <td><div className="skeleton animate-pulse" style={{ width: 80, height: 24, background: 'var(--gray-200)', borderRadius: 4 }} /></td>
                     </tr>
                   ))
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={5} style={{ textAlign: 'center', padding: 48, color: 'var(--gray-400)' }}>No employees available in this space 🚫</td></tr>
+                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: 48, color: 'var(--gray-400)' }}>No employees available in this space 🚫</td></tr>
                 ) : filtered.map(emp => (
                   <tr key={emp.empId}>
                     <td>
@@ -421,6 +439,7 @@ export default function UsersPage() {
                     </td>
                     <td><span className={`badge ${ROLE_BADGE[emp.role] || 'badge-gray'}`}>{emp.role}</span></td>
                     <td style={{ fontFamily: 'JetBrains Mono', fontSize: 12, color: 'var(--gray-500)' }}>#{emp.spaceId}</td>
+                    <td><span style={{ fontSize: 13, color: 'var(--gray-600)' }}>{emp.departmentName || '-'}</span></td>
                     <td>
                       <span className={`badge ${getStatusBadge(emp.status)}`}>
                         {displayStatus(emp.status)}
@@ -429,7 +448,7 @@ export default function UsersPage() {
                     <td>
                       {currentUser?.role === 'Admin' ? (
                         <div style={{ display: 'flex', gap: 4 }}>
-                          <button className="icon-btn" title="Edit" aria-label="Edit employee" onClick={() => { setEditModal(emp); setEditUser({ name: emp.name || '', email: emp.email || '', role: emp.role || 'Employee', spaceId: emp.spaceId || '' }); }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span></button>
+                          <button className="icon-btn" title="Edit" aria-label="Edit employee" onClick={() => { setEditModal(emp); setEditUser({ name: emp.name || '', email: emp.email || '', role: emp.role || 'Employee', spaceId: emp.spaceId || '', departmentId: emp.departmentId || '' }); }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span></button>
                           <button className="icon-btn" title="Warn" aria-label="Issue warning" onClick={() => setWarnModal(emp)} style={{ color: 'var(--warning)' }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>warning</span></button>
                           <button className="icon-btn" title="Change Status" aria-label="Change employee status" onClick={() => { setStatusModal(emp); setNewStatus(displayStatus(emp.status)); setStatusReason(''); }} style={{ color: 'var(--primary-600)' }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>manage_accounts</span></button>
                           <button
@@ -574,23 +593,25 @@ export default function UsersPage() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Workspace *</label>
-                  <select
-                    className="form-select"
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="Enter Workspace ID (e.g. 1)"
                     required
                     value={newUser.spaceId}
                     onChange={e => setNewUser(p => ({ ...p, spaceId: e.target.value }))}
-                  >
-                    <option value="">Select Workspace</option>
-                    {spaces.map(s => {
-                      const spId = s.spaceId ?? s.spaceid ?? s.SpaceId;
-                      const spName = s.spaceName ?? s.spacename ?? s.SpaceName;
-                      return (
-                        <option key={spId} value={spId}>
-                          {spName} (ID: {spId})
-                        </option>
-                      );
-                    })}
-                  </select>
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Department ID *</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="Enter Department ID (e.g. 1)"
+                    required
+                    value={newUser.departmentId}
+                    onChange={e => setNewUser(p => ({ ...p, departmentId: e.target.value }))}
+                  />
                 </div>
               </div>
               <div className="modal-footer">
@@ -625,23 +646,25 @@ export default function UsersPage() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Workspace *</label>
-                  <select
-                    className="form-select"
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="Enter Workspace ID (e.g. 1)"
                     required
                     value={editUser.spaceId}
                     onChange={e => setEditUser(p => ({ ...p, spaceId: e.target.value }))}
-                  >
-                    <option value="">Select Workspace</option>
-                    {spaces.map(s => {
-                      const spId = s.spaceId ?? s.spaceid ?? s.SpaceId;
-                      const spName = s.spaceName ?? s.spacename ?? s.SpaceName;
-                      return (
-                        <option key={spId} value={spId}>
-                          {spName} (ID: {spId})
-                        </option>
-                      );
-                    })}
-                  </select>
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Department ID *</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    placeholder="Enter Department ID (e.g. 1)"
+                    required
+                    value={editUser.departmentId}
+                    onChange={e => setEditUser(p => ({ ...p, departmentId: e.target.value }))}
+                  />
                 </div>
               </div>
               <div className="modal-footer">

@@ -96,9 +96,9 @@ export default function PayslipTemplateRenderer({ settings, payslipData, user })
   // Resolve Allowances
   if (showAllowances) {
     if (breakdown?.allowances && breakdown.allowances.length > 0) {
-      allowanceList = breakdown.allowances.map(a => ({ name: a.name || a.Name, amount: Number(a.amount || a.Amount || 0) }));
+      allowanceList = breakdown.allowances.map(a => ({ name: a.name || a.Name, amount: Number(a.amount || a.Amount || a.calculatedAmount || a.CalculatedAmount || 0) }));
     } else if (payslipData?.allowances && Array.isArray(payslipData.allowances)) {
-      allowanceList = payslipData.allowances.map(a => ({ name: a.name || a.Name, amount: Number(a.amount || a.Amount || 0) }));
+      allowanceList = payslipData.allowances.map(a => ({ name: a.name || a.Name, amount: Number(a.amount || a.Amount || a.calculatedAmount || a.CalculatedAmount || 0) }));
     } else {
       // Fallback manual resolution
       const hraVal = Number(breakdown?.hra || payslipData?.hra || 0);
@@ -126,9 +126,9 @@ export default function PayslipTemplateRenderer({ settings, payslipData, user })
   // Resolve Deductions
   if (showDeductions) {
     if (breakdown?.deductions && breakdown.deductions.length > 0) {
-      deductionList = breakdown.deductions.map(d => ({ name: d.name || d.Name, amount: Number(d.amount || d.Amount || 0) }));
+      deductionList = breakdown.deductions.map(d => ({ name: d.name || d.Name, amount: Number(d.amount || d.Amount || d.calculatedAmount || d.CalculatedAmount || 0) }));
     } else if (payslipData?.deductions && Array.isArray(payslipData.deductions)) {
-      deductionList = payslipData.deductions.map(d => ({ name: d.name || d.Name, amount: Number(d.amount || d.Amount || 0) }));
+      deductionList = payslipData.deductions.map(d => ({ name: d.name || d.Name, amount: Number(d.amount || d.Amount || d.calculatedAmount || d.CalculatedAmount || 0) }));
     } else {
       // Fallback standard deductions
       const pfVal = Number(breakdown?.pf || payslipData?.pf || 0);

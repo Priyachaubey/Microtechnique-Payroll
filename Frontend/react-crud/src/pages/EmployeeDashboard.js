@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 import { noticesApi } from '../api';
 import { analyticsApi } from '../api/analytics';
 import { worklogsApi } from '../api/worklogs';
-
+import FaceRecognitionCheckIn from '../components/FaceRecognitionCheckIn';
 const CLOCK_COOLDOWN_MS = 2000;
 
 function StatCard({ icon, iconBg, iconColor, label, value, sub, badge, badgeColor }) {
@@ -294,6 +294,7 @@ export default function EmployeeDashboard() {
   const [lastSync, setLastSync] = useState(null);
   const [btnDisabled, setBtnDisabled] = useState(false);
   const [myProjectsCount, setMyProjectsCount] = useState(null);
+  const [showFaceScan, setShowFaceScan] = useState(false);
 
   // Analytics States
   const [productivityData, setProductivityData] = useState(null);
@@ -697,13 +698,13 @@ export default function EmployeeDashboard() {
               )}
               <button
                 className="btn btn-success"
-                onClick={() => handleClock('in')}
+                onClick={() => setShowFaceScan(true)}
                 disabled={btnDisabled || isClockedIn}
-                aria-label="Clock In"
-                style={{ background: isClockedIn ? 'rgba(255,255,255,.2)' : undefined }}
+                aria-label="Face Check-In"
+                style={{ background: isClockedIn ? 'rgba(255,255,255,.2)' : undefined, display: 'flex', alignItems: 'center', gap: '8px' }}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>login</span>
-                Clock In
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>face</span>
+                Face Check-In
               </button>
 
               {isClockedIn && (
@@ -932,6 +933,14 @@ export default function EmployeeDashboard() {
           )}
         </div>
       </div>
+      <FaceRecognitionCheckIn
+        isOpen={showFaceScan}
+        onClose={() => setShowFaceScan(false)}
+        onSuccess={() => {
+          handleClock('in');
+          // Wait briefly, then trigger the visual clock-in event which refreshes attendance
+        }}
+      />
     </AppLayout>
   );
 }

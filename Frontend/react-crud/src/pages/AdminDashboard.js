@@ -195,6 +195,30 @@ export default function AdminDashboard() {
     }
   }
 
+  // Department Stats for Pie Chart
+  const departmentCounts = users.reduce((acc, user) => {
+    const dept = user.departmentName || 'Unassigned';
+    acc[dept] = (acc[dept] || 0) + 1;
+    return acc;
+  }, {});
+
+  const deptData = Object.entries(departmentCounts).map(([name, count]) => ({
+    name, count
+  }));
+  const totalWithDepts = users.length || 1;
+
+  // Colors for Pie Chart
+  const colors = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6B7280'];
+  let conicGradientStr = '';
+  let cumulativePercent = 0;
+  deptData.forEach((d, i) => {
+    const start = cumulativePercent;
+    const slice = (d.count / totalWithDepts) * 100;
+    cumulativePercent += slice;
+    conicGradientStr += `${colors[i % colors.length]} ${start}% ${cumulativePercent}%, `;
+  });
+  conicGradientStr = conicGradientStr.slice(0, -2); // remove trailing comma
+
   return (
     <AppLayout role="admin">
       <div className="page-content fade-in">
@@ -346,6 +370,47 @@ export default function AdminDashboard() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+          </div>
+          
+          <div className="admin-main-grid" style={{ gridTemplateColumns: '1fr 1fr', marginTop: 24 }}>
+          {/* Department Pie Chart */}
+          <div className="card" style={{
+            background: '#fff',
+            borderRadius: 'var(--radius-xl)',
+            padding: '20px 24px',
+            border: '1px solid var(--gray-200)',
+            boxShadow: 'var(--shadow-sm)'
+          }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--gray-900)', marginBottom: 6 }}>Department Distribution</h2>
+            <p style={{ fontSize: 12, color: 'var(--gray-400)', marginBottom: 20 }}>
+              Number of employees per department
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+              {deptData.length > 0 && users.length > 0 ? (
+                <div style={{
+                  width: 140,
+                  height: 140,
+                  borderRadius: '50%',
+                  background: `conic-gradient(${conicGradientStr})`,
+                  flexShrink: 0
+                }} />
+              ) : (
+                <div style={{ width: 140, height: 140, borderRadius: '50%', background: 'var(--gray-200)' }} />
+              )}
+              
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {deptData.map((d, i) => (
+                  <div key={d.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 12, height: 12, borderRadius: 2, background: colors[i % colors.length] }} />
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--gray-700)' }}>{d.name}</span>
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gray-900)' }}>{d.count}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

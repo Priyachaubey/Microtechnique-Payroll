@@ -388,15 +388,16 @@ function LimitsModal({ admin, onClose, onConfirm, loading }) {
   );
 }
 
-function SettingsModal({ onClose, onConfirm, loading, user }) {
+function SettingsModal({ onClose, onConfirm, loading, user, initialEmpPrice, onSavePrice }) {
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [empPrice, setEmpPrice] = useState(initialEmpPrice || 99);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -415,12 +416,17 @@ function SettingsModal({ onClose, onConfirm, loading, user }) {
       }
     }
 
-    onConfirm({
-      name,
-      email,
-      currentPassword: currentPassword ? btoa(currentPassword) : null,
-      newPassword: newPassword ? btoa(newPassword) : null,
-    });
+    try {
+      await onSavePrice(empPrice);
+      onConfirm({
+        name,
+        email,
+        currentPassword: currentPassword ? btoa(currentPassword) : null,
+        newPassword: newPassword ? btoa(newPassword) : null,
+      });
+    } catch (err) {
+      setError(err.message || 'Failed to update pricing');
+    }
   };
 
   return (
@@ -467,6 +473,29 @@ function SettingsModal({ onClose, onConfirm, loading, user }) {
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
+            style={{
+              width: '100%', padding: '10px 14px', fontSize: 13, background: C.bg,
+              border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
+
+        <div style={{ margin: '8px 0', borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 4 }}>SaaS Subscription Pricing</div>
+          <span style={{ fontSize: 11, color: C.textMuted }}>Set the default cost billed per active employee monthly</span>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>
+            Pricing per Employee (INR)
+          </label>
+          <input
+            type="number"
+            value={empPrice}
+            onChange={e => setEmpPrice(parseInt(e.target.value) || 0)}
+            required
+            min={1}
             style={{
               width: '100%', padding: '10px 14px', fontSize: 13, background: C.bg,
               border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, outline: 'none',
@@ -763,6 +792,7 @@ export default function SuperAdminDashboard() {
   const [toggleLoadingId, setToggleLoadingId] = useState(null);
   const [activeTab, setActiveTab] = useState('pending');
   const [searchQuery, setSearchQuery] = useState('');
+  const [empPrice, setEmpPrice] = useState(99);
 
   // Modal state
   const [approveModal, setApproveModal] = useState(null);
@@ -776,14 +806,16 @@ export default function SuperAdminDashboard() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [adminsRes, pendingRes, statsRes] = await Promise.all([
+      const [adminsRes, pendingRes, statsRes, configRes] = await Promise.all([
         apiClient.get('/SuperAdmin/admins'),
         apiClient.get('/SuperAdmin/admins/pending'),
         apiClient.get('/SuperAdmin/stats'),
+        apiClient.get('/SuperAdmin/config/employee_price_inr')
       ]);
       setAdmins(adminsRes.data);
       setPendingAdmins(pendingRes.data);
       setStats(statsRes.data);
+      setEmpPrice(parseInt(configRes.data.value) || 99);
     } catch (err) {
       console.error('[Dashboard] fetch error:', err);
       toast.error('Failed to load data');
@@ -866,6 +898,11 @@ export default function SuperAdminDashboard() {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleSavePrice = async (newPrice) => {
+    await apiClient.patch('/SuperAdmin/config/employee_price_inr', { value: String(newPrice) });
+    setEmpPrice(newPrice);
   };
 
   const handleSaveSettings = async (settingsData) => {
@@ -1186,6 +1223,12 @@ export default function SuperAdminDashboard() {
                         </div>
                         <div style={{ fontSize: 18, fontWeight: 800, color: C.purple }}>{admin.currentSpaceCount}</div>
                       </div>
+                      <div style={{ minWidth: 90 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>
+                          Monthly Bill
+                        </div>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: C.success }}>₹{admin.currentEmployeeCount * empPrice}</div>
+                      </div>
                     </div>
                   </div>
 
@@ -1256,6 +1299,8 @@ export default function SuperAdminDashboard() {
       {showSettingsModal && (
         <SettingsModal
           user={user}
+          initialEmpPrice={empPrice}
+          onSavePrice={handleSavePrice}
           onClose={() => setShowSettingsModal(false)}
           onConfirm={handleSaveSettings}
           loading={actionLoading}

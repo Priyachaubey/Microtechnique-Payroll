@@ -594,14 +594,14 @@ function AssignTaskModal({ project, teamMembers, onClose, onAssigned }) {
         <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
           <div>
             <label style={labelStyle}>Assign To *</label>
-            <select style={inputStyle} value={form.assignedToEmpId} onChange={e => set('assignedToEmpId', e.target.value)} required>
-              <option value="">— Select Employee —</option>
+            <input type="text" list="teamMembersList" style={inputStyle} value={form.assignedToEmpId} onChange={e => set('assignedToEmpId', e.target.value)} required placeholder="Type Employee ID..." />
+            <datalist id="teamMembersList">
               {teamMembers.map(m => (
                 <option key={m.empId} value={m.empId}>
-                  {m.name || m.email?.split('@')[0]} ({m.role}) — #{m.empId}
+                  {m.name || m.email?.split('@')[0]} ({m.role})
                 </option>
               ))}
-            </select>
+            </datalist>
             {teamMembers.length === 0 && (
               <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>No active team members found.</p>
             )}

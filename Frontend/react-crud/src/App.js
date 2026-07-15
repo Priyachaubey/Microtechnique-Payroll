@@ -33,6 +33,14 @@ const ManageUsersPage = lazy(() => import('./pages/ManageUsersPage'));
 const LiveMonitoringPage = lazy(() => import('./pages/LiveMonitoringPage'));
 const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
 const PayslipSettingsPage = lazy(() => import('./pages/PayslipSettingsPage'));
+const DepartmentsPage = lazy(() => import('./pages/DepartmentsPage'));
+const ComplianceDashboard = lazy(() => import('./pages/ComplianceDashboard'));
+const ComplianceSettings = lazy(() => import('./pages/ComplianceSettings'));
+const ReimbursementsPage = lazy(() => import('./pages/ReimbursementsPage'));
+const RecruitmentPage = lazy(() => import('./pages/RecruitmentPage'));
+const AssetsPage = lazy(() => import('./pages/AssetsPage'));
+const SupportPage = lazy(() => import('./pages/SupportPage'));
+const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -113,6 +121,46 @@ export default function App() {
                 <Route path="/admin/users" element={
                   <ProtectedRoute allowedRoles={['Admin']}>
                     <UsersPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/departments" element={
+                  <ProtectedRoute allowedRoles={['Admin']}>
+                    <DepartmentsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/compliance" element={
+                  <ProtectedRoute allowedRoles={['Admin']}>
+                    <ComplianceDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/settings/compliance" element={
+                  <ProtectedRoute allowedRoles={['Admin']}>
+                    <ComplianceSettings />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/reimbursements" element={
+                  <ProtectedRoute allowedRoles={['Admin']}>
+                    <ReimbursementsPage isAdmin={true} />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/recruitment" element={
+                  <ProtectedRoute allowedRoles={['Admin']}>
+                    <RecruitmentPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/assets" element={
+                  <ProtectedRoute allowedRoles={['Admin']}>
+                    <AssetsPage isAdmin={true} />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/support" element={
+                  <ProtectedRoute allowedRoles={['Admin']}>
+                    <SupportPage isAdmin={true} />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/integrations" element={
+                  <ProtectedRoute allowedRoles={['Admin']}>
+                    <IntegrationsPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/projects" element={
@@ -201,6 +249,21 @@ export default function App() {
                 <Route path="/employee/queries" element={
                   <ProtectedRoute allowedRoles={['Employee', 'TeamLead', 'Manager']}>
                     <QueriesPage isAdmin={false} />
+                  </ProtectedRoute>
+                } />
+                <Route path="/employee/reimbursements" element={
+                  <ProtectedRoute allowedRoles={['Employee', 'TeamLead', 'Manager']}>
+                    <ReimbursementsPage isAdmin={false} />
+                  </ProtectedRoute>
+                } />
+                <Route path="/employee/assets" element={
+                  <ProtectedRoute allowedRoles={['Employee', 'TeamLead', 'Manager']}>
+                    <AssetsPage isAdmin={false} />
+                  </ProtectedRoute>
+                } />
+                <Route path="/employee/support" element={
+                  <ProtectedRoute allowedRoles={['Employee', 'TeamLead', 'Manager']}>
+                    <SupportPage isAdmin={false} />
                   </ProtectedRoute>
                 } />
                 <Route path="/employee/worklogs" element={

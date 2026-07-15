@@ -20,7 +20,7 @@ export default function WorkLogsPage() {
 
   const [form, setForm] = useState(() => {
     const saved = localStorage.getItem(DRAFT_KEY);
-    return saved ? JSON.parse(saved) : { taskId: '', hoursWorked: '', description: '', taskStatus: 'Pending' };
+    return saved ? JSON.parse(saved) : { taskId: '', customTask: '', hoursWorked: '', description: '', taskStatus: 'Pending' };
   });
   const [errors, setErrors] = useState({});
 
@@ -62,7 +62,7 @@ export default function WorkLogsPage() {
   // Auto-save draft every 30s when form is dirty
   useEffect(() => {
     autoSaveTimer.current = setInterval(() => {
-      if (form.taskId || form.description) {
+      if (form.taskId || form.customTask || form.description) {
         localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
       }
     }, 30000);
@@ -77,7 +77,7 @@ export default function WorkLogsPage() {
 
   const validate = () => {
     const e = {};
-    if (!form.taskId) e.taskId = 'Select a task';
+    if (!form.taskId && !form.customTask?.trim()) e.taskId = 'Select a task OR type a task name';
     const h = parseFloat(form.hoursWorked);
     if (!form.hoursWorked || isNaN(h)) e.hoursWorked = 'Enter valid hours';
     else if (h < 0.5) e.hoursWorked = 'Minimum 0.5 hours';
@@ -93,14 +93,21 @@ export default function WorkLogsPage() {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      await worklogsApi.createWorklog({
-        taskId: parseInt(form.taskId),
+      const payload = {
         hoursWorked: parseFloat(form.hoursWorked),
         description: form.description.trim(),
         taskStatus: form.taskStatus,
-      });
+      };
+      // Use selected task OR custom task name
+      if (form.taskId) {
+        payload.taskId = parseInt(form.taskId);
+      } else {
+        payload.taskId = 0; // will be treated as free-text log
+        payload.customTaskName = form.customTask.trim();
+      }
+      await worklogsApi.createWorklog(payload);
       toast.success('✅ Work log saved to database!');
-      setForm({ taskId: '', hoursWorked: '', description: '', taskStatus: 'Pending' });
+      setForm({ taskId: '', customTask: '', hoursWorked: '', description: '', taskStatus: 'Pending' });
       setErrors({});
       localStorage.removeItem(DRAFT_KEY);
       fetchLogs();
@@ -164,17 +171,36 @@ export default function WorkLogsPage() {
 
               <div className="form-group">
                 <label className="form-label">Task *</label>
+
+                {/* Simple free-text task name box */}
+                <input
+                  type="text"
+                  className={`form-input ${errors.taskId && !form.customTask ? 'input-error' : ''}`}
+                  placeholder="Type task name here..."
+                  value={form.customTask || ''}
+                  onChange={e => setForm(f => ({ ...f, customTask: e.target.value, taskId: '' }))}
+                  style={{ marginBottom: 8 }}
+                />
+
+                {/* OR divider */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ flex: 1, height: 1, background: 'var(--gray-200)' }} />
+                  <span style={{ fontSize: 11, color: 'var(--gray-400)', fontWeight: 600 }}>OR SELECT ASSIGNED</span>
+                  <div style={{ flex: 1, height: 1, background: 'var(--gray-200)' }} />
+                </div>
+
+                {/* Assigned tasks dropdown */}
                 {loadingProjects ? (
                   <div style={{ height: 36, background: 'var(--gray-100)', borderRadius: 8, animation: 'pulse 1.5s infinite' }} />
                 ) : (
                   <select
-                    className={`form-select ${errors.taskId ? 'input-error' : ''}`}
+                    className={`form-select ${errors.taskId && !form.taskId ? 'input-error' : ''}`}
                     value={form.taskId}
                     onChange={e => {
                       const taskIdVal = e.target.value;
                       const selectedTask = tasks.find(t => (t.taskId || t.taskid) === parseInt(taskIdVal));
                       const currentStatus = selectedTask ? (selectedTask.status || selectedTask.taskStatus || selectedTask.taskstatus || 'Pending') : 'Pending';
-                      setForm(f => ({ ...f, taskId: taskIdVal, taskStatus: currentStatus }));
+                      setForm(f => ({ ...f, taskId: taskIdVal, customTask: '', taskStatus: currentStatus }));
                     }}
                   >
                     <option value="">Select a task</option>
@@ -198,7 +224,6 @@ export default function WorkLogsPage() {
                   className="form-select"
                   value={form.taskStatus || 'Pending'}
                   onChange={e => setForm(f => ({ ...f, taskStatus: e.target.value }))}
-                  disabled={!form.taskId}
                 >
                   <option value="Pending">Pending</option>
                   <option value="Active">Active</option>
@@ -244,9 +269,9 @@ export default function WorkLogsPage() {
                 }
               </button>
 
-              {(form.taskId || form.description) && (
+              {(form.taskId || form.customTask || form.description) && (
                 <button type="button" className="btn btn-ghost btn-sm" style={{ justifyContent: 'center' }}
-                  onClick={() => { setForm({ taskId: '', hoursWorked: '', description: '', taskStatus: 'Pending' }); localStorage.removeItem(DRAFT_KEY); }}>
+                  onClick={() => { setForm({ taskId: '', customTask: '', hoursWorked: '', description: '', taskStatus: 'Pending' }); localStorage.removeItem(DRAFT_KEY); }}>
                   Clear Draft
                 </button>
               )}

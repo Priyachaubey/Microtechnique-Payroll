@@ -21,9 +21,9 @@ export const attendanceApi = {
   getAllAttendance: (signal) =>
     withRetry(() => apiClient.get('/Attendance', { signal })),
 
-  clockIn: () => {
+  clockIn: (data) => {
     const key = getClockKey('in');
-    return apiClient.post('/Attendance/clock-in', {}, {
+    return apiClient.post('/Attendance/clock-in', data || {}, {
       headers: { 'Idempotency-Key': key },
     }).finally(resetClockKey);
   },

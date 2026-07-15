@@ -92,4 +92,6 @@ public interface ISuperAdminRepository
     Task<SuperAdmin?> GetSuperAdminByIdAsync(int id);
     Task<bool> UpdateSuperAdminAsync(SuperAdmin superAdmin);
     Task<int> CreateSuperAdminAsync(string email, string name, string passwordHash);
+    Task<string> GetGlobalConfigAsync(string key);
+    Task<bool> UpdateGlobalConfigAsync(string key, string value);
 }

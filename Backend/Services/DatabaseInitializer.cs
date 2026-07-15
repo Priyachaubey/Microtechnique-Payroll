@@ -30,6 +30,41 @@ namespace Backend.Services
                     isInitialized = (bool)(await cmd.ExecuteScalarAsync() ?? false);
                 }
 
+                // Ensure t_assets has assigned_date
+                try {
+                    using var cmdAsset = new NpgsqlCommand("ALTER TABLE t_assets ADD COLUMN IF NOT EXISTS assigned_date TIMESTAMP;", conn);
+                    await cmdAsset.ExecuteNonQueryAsync();
+                } catch (Exception ex) {
+                    Console.WriteLine($"[DatabaseInitializer] Could not add assigned_date to t_assets: {ex.Message}");
+                }
+
+                // Ensure support tickets tables exist
+                try {
+                    var ticketsSql = @"
+                        CREATE TABLE IF NOT EXISTS t_tickets (
+                            ticketid SERIAL PRIMARY KEY,
+                            spaceid INT NOT NULL,
+                            empid INT NOT NULL,
+                            subject VARCHAR(255) NOT NULL,
+                            description TEXT NOT NULL,
+                            status VARCHAR(50) DEFAULT 'Open',
+                            createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        );
+
+                        CREATE TABLE IF NOT EXISTS t_ticket_replies (
+                            replyid SERIAL PRIMARY KEY,
+                            ticketid INT NOT NULL,
+                            sender_empid INT NOT NULL,
+                            message TEXT NOT NULL,
+                            createdat TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        );
+                    ";
+                    using var cmdTickets = new NpgsqlCommand(ticketsSql, conn);
+                    await cmdTickets.ExecuteNonQueryAsync();
+                } catch (Exception ex) {
+                    Console.WriteLine($"[DatabaseInitializer] Could not create ticket tables: {ex.Message}");
+                }
+
                 if (!isInitialized)
                 {
                     Console.WriteLine("[DatabaseInitializer] Fresh database detected. Running full schema and seed script...");

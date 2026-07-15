@@ -38,8 +38,10 @@ export const payrollApi = {
     withRetry(() => apiClient.get('/performance', { signal })),
 
   // GET /api/payroll/myslips — employee's own payslips with admin-configured breakdown
-  getMyPayslips: (signal) =>
-    withRetry(() => apiClient.get('/payroll/myslips', { signal })),
+  getMyPayslips: (signal) => withRetry(() => apiClient.get('/payroll/myslips', { signal })),
+
+  // New API: Direct Bank Transfer
+  initiateBankTransfer: (month, year) => apiClient.post('/Payroll/bank-transfer', { month, year }),
 
   // GET /api/payroll/full/{empId} — (admin/manager) consolidated payroll structure, history, and work impact stats
   getFullPayrollDetails: (empId, month, year, signal) =>

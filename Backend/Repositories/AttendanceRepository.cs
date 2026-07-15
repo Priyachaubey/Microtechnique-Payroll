@@ -23,7 +23,7 @@ public class AttendanceRepository : IAttendanceRepository
         return await _dbConnection.QueryAsync<Attendance>(query, new { EmpId = empid });
     }
 
-    public async Task<bool> ClockInAsync(int empId)
+    public async Task<bool> ClockInAsync(int empId, string verificationMode = "Web")
     {
         var now = DateTime.Now;
         var checkQuery = @"SELECT COUNT(1) 
@@ -52,10 +52,10 @@ public class AttendanceRepository : IAttendanceRepository
             }
         }
 
-        var insertQuery = @"INSERT INTO t_attendance (empid, attendancedate, clockin, status, lateminutes, createdat)
-                            VALUES (@EmpId, @Today, @Now, 'Present', @LateMinutes, @Now)";
+        var insertQuery = @"INSERT INTO t_attendance (empid, attendancedate, clockin, status, lateminutes, createdat, verification_mode)
+                            VALUES (@EmpId, @Today, @Now, 'Present', @LateMinutes, @Now, @VerificationMode)";
 
-        var result = await _dbConnection.ExecuteAsync(insertQuery, new { EmpId = empId, Today = now.Date, Now = now, LateMinutes = lateMinutes });
+        var result = await _dbConnection.ExecuteAsync(insertQuery, new { EmpId = empId, Today = now.Date, Now = now, LateMinutes = lateMinutes, VerificationMode = verificationMode });
 
         return result > 0;
     }

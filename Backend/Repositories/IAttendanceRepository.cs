@@ -7,7 +7,7 @@ using Backend.Models;
 public interface IAttendanceRepository
 {
     Task<IEnumerable<Attendance>> GetAttendanceByUserIdAsync(int empid);
-    Task<bool> ClockInAsync(int empId);
+    Task<bool> ClockInAsync(int empId, string verificationMode = "Web");
     Task<bool> ClockOutAsync(int attendanceId, DateTime clockOut, decimal totalHours, int earlyExitMinutes);
     Task<IEnumerable<Attendance>> GetAllAttendanceAsync();
     Task<IEnumerable<Attendance>> GetAttendanceBySpaceIdAsync(int spaceId, int? limitRows = 500);

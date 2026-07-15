@@ -373,6 +373,48 @@ public class SuperAdminController : ControllerBase
             return StatusCode(500, new { message = "Failed to create SuperAdmin." });
         }
     }
+
+    /// <summary>
+    /// GET /api/SuperAdmin/config/{key} — Fetch any global config value
+    /// </summary>
+    [HttpGet("config/{key}")]
+    public async Task<IActionResult> GetGlobalConfig(string key)
+    {
+        try
+        {
+            var val = await _repo.GetGlobalConfigAsync(key);
+            return Ok(new { key, value = val });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SuperAdmin] GetGlobalConfig error: {ex.Message}");
+            return StatusCode(500, new { message = "Failed to fetch config value." });
+        }
+    }
+
+    /// <summary>
+    /// PATCH /api/SuperAdmin/config/{key} — Update global config value
+    /// </summary>
+    [HttpPatch("config/{key}")]
+    public async Task<IActionResult> UpdateGlobalConfig(string key, [FromBody] GlobalConfigRequest request)
+    {
+        try
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Value))
+                return BadRequest(new { message = "Config value is required." });
+
+            var success = await _repo.UpdateGlobalConfigAsync(key, request.Value.Trim());
+            if (!success)
+                return BadRequest(new { message = "Failed to update configuration." });
+
+            return Ok(new { message = $"Configuration '{key}' updated successfully.", key, value = request.Value.Trim() });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SuperAdmin] UpdateGlobalConfig error: {ex.Message}");
+            return StatusCode(500, new { message = "Failed to update config value." });
+        }
+    }
 }
 
 public class CreateSuperAdminRequest
@@ -381,5 +423,10 @@ public class CreateSuperAdminRequest
     public string NewEmail { get; set; } = string.Empty;
     public string NewName { get; set; } = string.Empty;
     public string NewPassword { get; set; } = string.Empty;
+}
+
+public class GlobalConfigRequest
+{
+    public string Value { get; set; } = string.Empty;
 }
 

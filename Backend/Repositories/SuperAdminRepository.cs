@@ -188,4 +188,22 @@ public class SuperAdminRepository : ISuperAdminRepository
             RETURNING id";
         return await _dbConnection.ExecuteScalarAsync<int>(query, new { Email = email, Name = name, PasswordHash = passwordHash });
     }
+
+    public async Task<string> GetGlobalConfigAsync(string key)
+    {
+        var query = "SELECT config_value FROM t_global_configs WHERE config_key = @Key LIMIT 1";
+        var val = await _dbConnection.QueryFirstOrDefaultAsync<string>(query, new { Key = key });
+        return val ?? "";
+    }
+
+    public async Task<bool> UpdateGlobalConfigAsync(string key, string value)
+    {
+        var query = @"
+            INSERT INTO t_global_configs (config_key, config_value, updated_at)
+            VALUES (@Key, @Value, CURRENT_TIMESTAMP)
+            ON CONFLICT (config_key) 
+            DO UPDATE SET config_value = EXCLUDED.config_value, updated_at = EXCLUDED.updated_at";
+        var result = await _dbConnection.ExecuteAsync(query, new { Key = key, Value = value });
+        return result > 0;
+    }
 }

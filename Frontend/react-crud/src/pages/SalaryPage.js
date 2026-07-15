@@ -250,6 +250,22 @@ export default function SalaryPage({ isAdmin }) {
     }
   };
 
+  const handleBankTransfer = async () => {
+    const monthName = MONTHS[selMonth - 1];
+    if (!window.confirm(`Initiate direct bank transfers for ${monthName} ${selYear}? This will execute the corporate banking API and generate payslips.`)) return;
+    
+    const loadingToast = toast.loading(`Initiating corporate bank transfers...`);
+    try {
+      const res = await payrollApi.initiateBankTransfer(selMonth, selYear);
+      toast.success(res.data.message || `Transfer initiated. ID: ${res.data.transferId}`, { id: loadingToast });
+      if (selectedEmpId) {
+        fetchAllData(selMonth, selYear, selectedEmpId);
+      }
+    } catch (err) {
+      toast.error('Failed to initiate transfer.', { id: loadingToast });
+    }
+  };
+
   const handleDownloadPdf = () => {
     const download = () => {
       const element = document.getElementById('salary-breakdown-renderer');
@@ -356,29 +372,53 @@ export default function SalaryPage({ isAdmin }) {
             </select>
 
             {isAdmin && (
-              <button
-                onClick={handleProcessPayroll}
-                disabled={processing}
-                className="btn"
-                style={{
-                  background: 'linear-gradient(135deg, #7C3AED, #4F46E5)',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '9px 18px',
-                  borderRadius: 10,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>auto_settings</span>
-                {processing ? "Processing..." : "Process Month Payouts"}
-              </button>
+              <>
+                <button
+                  onClick={handleProcessPayroll}
+                  disabled={processing}
+                  className="btn"
+                  style={{
+                    background: 'linear-gradient(135deg, #7C3AED, #4F46E5)',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '9px 18px',
+                    borderRadius: 10,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>auto_settings</span>
+                  {processing ? "Processing..." : "Process Month Payouts"}
+                </button>
+                <button
+                  onClick={handleBankTransfer}
+                  className="btn"
+                  style={{
+                    background: '#10B981',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '9px 18px',
+                    borderRadius: 10,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>account_balance</span>
+                  Direct Bank Transfer
+                </button>
+              </>
             )}
           </div>
         </div>

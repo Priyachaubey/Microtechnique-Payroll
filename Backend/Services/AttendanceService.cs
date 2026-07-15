@@ -10,7 +10,7 @@ namespace Backend.Services
     public interface IAttendanceService
     {
         Task<object> GetMyAttendanceAsync(int empId);
-        Task<bool> ClockInAsync(int empId, string? ipAddress);
+        Task<bool> ClockInAsync(int empId, string? ipAddress, string verificationMode = "Web");
         Task<object> ClockOutAsync(int empId);
         Task<IEnumerable<Attendance>> GetAttendanceByUserIdAsync(int empId, int callerSpaceId, string callerRole);
         Task<IEnumerable<Attendance>> GetAttendanceBySpaceIdAsync(int spaceId, int callerSpaceId, string callerRole);
@@ -22,6 +22,7 @@ namespace Backend.Services
         Task<IEnumerable<Holiday>> GetHolidaysBySpaceIdAsync(int spaceId);
         Task<bool> AddHolidayAsync(Holiday holiday);
         Task<bool> DeleteHolidayAsync(int holidayId, int spaceId);
+        Task<User?> GetUserByEmailAsync(string email);
     }
 
     public class AttendanceService : IAttendanceService
@@ -45,7 +46,7 @@ namespace Backend.Services
             return new { attendance, dateOfJoining, workingDays };
         }
 
-        public async Task<bool> ClockInAsync(int empId, string? ipAddress)
+        public async Task<bool> ClockInAsync(int empId, string? ipAddress, string verificationMode = "Web")
         {
             // Restrict login/clock-in by IP address (office network vs WFH override)
             bool ipAllowed = await _wfhService.IsIpAllowedAsync(empId, ipAddress);
@@ -54,7 +55,7 @@ namespace Backend.Services
                 throw new UnauthorizedAccessException("Clock-in restricted: You are not on the office network and do not have WFH approval for today.");
             }
 
-            return await _attendanceRepo.ClockInAsync(empId);
+            return await _attendanceRepo.ClockInAsync(empId, verificationMode);
         }
 
         public async Task<object> ClockOutAsync(int empId)
@@ -172,6 +173,11 @@ namespace Backend.Services
         public async Task<bool> DeleteHolidayAsync(int holidayId, int spaceId)
         {
             return await _attendanceRepo.DeleteHolidayAsync(holidayId, spaceId);
+        }
+
+        public async Task<User?> GetUserByEmailAsync(string email)
+        {
+            return await _userRepo.GetUserByEmailAsync(email);
         }
     }
 }
