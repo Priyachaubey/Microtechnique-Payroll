@@ -24,6 +24,13 @@ export default function FaceRecognitionCheckIn({ isOpen, onClose, onSuccess }) {
 
   const startCamera = async () => {
     try {
+      // 0. Load models first
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+        faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+      ]);
+
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
       setStream(mediaStream);
       if (videoRef.current) {
@@ -68,7 +75,10 @@ export default function FaceRecognitionCheckIn({ isOpen, onClose, onSuccess }) {
       const imgObjectUrl = URL.createObjectURL(imgBlob);
       
       const referenceImage = await faceapi.fetchImage(imgObjectUrl);
-      const referenceDetection = await faceapi.detectSingleFace(referenceImage).withFaceLandmarks().withFaceDescriptor();
+      const referenceDetection = await faceapi.detectSingleFace(
+        referenceImage,
+        new faceapi.TinyFaceDetectorOptions()
+      ).withFaceLandmarks().withFaceDescriptor();
       
       // Clean up the object URL
       URL.revokeObjectURL(imgObjectUrl);
@@ -89,7 +99,10 @@ export default function FaceRecognitionCheckIn({ isOpen, onClose, onSuccess }) {
         scanAttempts++;
         
         try {
-          const detection = await faceapi.detectSingleFace(videoRef.current).withFaceLandmarks().withFaceDescriptor();
+          const detection = await faceapi.detectSingleFace(
+            videoRef.current,
+            new faceapi.TinyFaceDetectorOptions()
+          ).withFaceLandmarks().withFaceDescriptor();
           if (detection) {
             const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
             if (bestMatch.distance < 0.6) {
