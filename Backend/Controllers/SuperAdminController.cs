@@ -415,7 +415,58 @@ public class SuperAdminController : ControllerBase
             return StatusCode(500, new { message = "Failed to update config value." });
         }
     }
-}
+    // ── Pricing Config Endpoints ───────────────────────────────────────
+    /// <summary>
+    /// GET /api/SuperAdmin/pricing-config — Fetch both Starter and Professional prices
+    /// </summary>
+    [HttpGet("pricing-config")]
+    public async Task<IActionResult> GetPricingConfig()
+    {
+        try
+        {
+            var starter = await _repo.GetGlobalConfigAsync("employee_price_starter_inr");
+            var professional = await _repo.GetGlobalConfigAsync("employee_price_inr");
+            return Ok(new { starterPrice = starter, professionalPrice = professional });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SuperAdmin] GetPricingConfig error: {ex.Message}");
+            return StatusCode(500, new { message = "Failed to fetch pricing config." });
+        }
+    }
+
+    /// <summary>
+    /// PATCH /api/SuperAdmin/pricing-config — Update Starter and Professional prices
+    /// </summary>
+    [HttpPatch("pricing-config")]
+    public async Task<IActionResult> UpdatePricingConfig([FromBody] PricingConfigRequest request)
+    {
+        try
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.StarterPrice) || string.IsNullOrWhiteSpace(request.ProfessionalPrice))
+                return BadRequest(new { message = "Both starter and professional prices are required." });
+
+            var succ1 = await _repo.UpdateGlobalConfigAsync("employee_price_starter_inr", request.StarterPrice.Trim());
+            var succ2 = await _repo.UpdateGlobalConfigAsync("employee_price_inr", request.ProfessionalPrice.Trim());
+            if (!succ1 || !succ2)
+                return BadRequest(new { message = "Failed to update pricing configuration." });
+
+            return Ok(new { message = "Pricing configuration updated successfully.", starterPrice = request.StarterPrice.Trim(), professionalPrice = request.ProfessionalPrice.Trim() });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SuperAdmin] UpdatePricingConfig error: {ex.Message}");
+            return StatusCode(500, new { message = "Failed to update pricing config." });
+        }
+    }
+
+    // Request model for pricing config
+    public class PricingConfigRequest
+    {
+        public string StarterPrice { get; set; } = string.Empty;
+        public string ProfessionalPrice { get; set; } = string.Empty;
+    }
+
 
 public class CreateSuperAdminRequest
 {

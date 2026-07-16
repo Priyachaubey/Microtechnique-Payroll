@@ -326,13 +326,14 @@ function LimitsModal({ admin, onClose, onConfirm, loading }) {
   );
 }
 
-function SettingsModal({ onClose, onConfirm, loading, user, initialEmpPrice, onSavePrice }) {
+function SettingsModal({ onClose, onConfirm, loading, user, initialEmpPrice, initialStarterPrice, onSavePricing }) {
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [empPrice, setEmpPrice] = useState(initialEmpPrice || 99);
+  const [starterPrice, setStarterPrice] = useState(initialStarterPrice || 49);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
@@ -355,7 +356,7 @@ function SettingsModal({ onClose, onConfirm, loading, user, initialEmpPrice, onS
     }
 
     try {
-      await onSavePrice(empPrice);
+      await onSavePricing({ professionalPrice: empPrice, starterPrice: starterPrice });
       onConfirm({
         name,
         email,
@@ -426,12 +427,27 @@ function SettingsModal({ onClose, onConfirm, loading, user, initialEmpPrice, onS
 
         <div>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>
-            Pricing per Employee (INR)
+            Professional Price per Employee (INR)
           </label>
           <input
             type="number"
             value={empPrice}
             onChange={e => setEmpPrice(parseInt(e.target.value) || 0)}
+            required
+            min={1}
+            style={{
+              width: '100%', padding: '10px 14px', fontSize: 13, background: C.bg,
+              border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.textMuted, marginTop: 12, marginBottom: 6 }}>
+            Starter Price per Employee (INR)
+          </label>
+          <input
+            type="number"
+            value={starterPrice}
+            onChange={e => setStarterPrice(parseInt(e.target.value) || 0)}
             required
             min={1}
             style={{
@@ -849,6 +865,7 @@ export default function SuperAdminDashboard() {
   const [actionLoading, setActionLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [empPrice, setEmpPrice] = useState(99);
+  const [starterPrice, setStarterPrice] = useState(49);
 
   // Expanded row and sub-tabs
   const [expandedAdminId, setExpandedAdminId] = useState(null);
@@ -876,16 +893,17 @@ export default function SuperAdminDashboard() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [adminsRes, pendingRes, statsRes, configRes] = await Promise.all([
+      const [adminsRes, pendingRes, statsRes, pricingRes] = await Promise.all([
         superAdminApi.getAdmins(),
         superAdminApi.getPendingAdmins(),
         superAdminApi.getStats(),
-        superAdminApi.getEmployeePrice()
+        superAdminApi.getPricingConfig()
       ]);
       setAdmins(adminsRes.data);
       setPendingAdmins(pendingRes.data);
       setStats(statsRes.data);
-      setEmpPrice(parseInt(configRes.data.value) || 99);
+      setEmpPrice(parseInt(pricingRes.data.professionalPrice) || 99);
+      setStarterPrice(parseInt(pricingRes.data.starterPrice) || 49);
     } catch (err) {
       console.error('[Dashboard] fetch error:', err);
       toast.error('Failed to load data');
@@ -944,6 +962,7 @@ export default function SuperAdminDashboard() {
         numberOfEmployees: maxEmp, maxSpaces: maxSp,
       });
       toast.success('Limits updated');
+      setAdmins(prev => prev.map(a => a.spaceId === limitsModal.spaceId ? { ...a, numberOfEmployees: maxEmp, maxSpaces: maxSp } : a));
       setLimitsModal(null);
       fetchData();
     } catch (err) {
@@ -953,9 +972,14 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  const handleSavePrice = async (newPrice) => {
-    await superAdminApi.saveEmployeePrice({ value: String(newPrice) });
-    setEmpPrice(newPrice);
+  const handleSavePricing = async (prices) => {
+    // prices: { professionalPrice, starterPrice }
+    await superAdminApi.savePricingConfig({
+      professionalPrice: String(prices.professionalPrice),
+      starterPrice: String(prices.starterPrice)
+    });
+    setEmpPrice(parseInt(prices.professionalPrice) || 99);
+    setStarterPrice(parseInt(prices.starterPrice) || 49);
   };
 
   const handleSaveSettings = async (settingsData) => {
@@ -1723,7 +1747,8 @@ export default function SuperAdminDashboard() {
         <SettingsModal
           user={user}
           initialEmpPrice={empPrice}
-          onSavePrice={handleSavePrice}
+          initialStarterPrice={starterPrice}
+          onSavePricing={handleSavePricing}
           onClose={() => setShowSettingsModal(false)}
           onConfirm={handleSaveSettings}
           loading={actionLoading}

@@ -578,6 +578,52 @@ public class AuthController : ControllerBase
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
+    [HttpGet("pricing")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPricingConfig()
+    {
+        try
+        {
+            var starterPrice = "49";
+            var professionalPrice = "99";
+
+            var connectionString = _configuration.GetConnectionString("DefaultConnection");
+            using (var conn = new Npgsql.NpgsqlConnection(connectionString))
+            {
+                await conn.OpenAsync();
+                
+                using (var cmdSeed = new Npgsql.NpgsqlCommand(@"
+                    INSERT INTO t_global_configs (config_key, config_value)
+                    VALUES ('employee_price_starter_inr', '49')
+                    ON CONFLICT (config_key) DO NOTHING;
+                ", conn))
+                {
+                    await cmdSeed.ExecuteNonQueryAsync();
+                }
+
+                var sql = "SELECT config_key, config_value FROM t_global_configs WHERE config_key IN ('employee_price_inr', 'employee_price_starter_inr');";
+                using (var cmd = new Npgsql.NpgsqlCommand(sql, conn))
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        var key = reader.GetString(0);
+                        var val = reader.GetString(1);
+                        if (key == "employee_price_inr") professionalPrice = val;
+                        else if (key == "employee_price_starter_inr") starterPrice = val;
+                    }
+                }
+            }
+
+            return Ok(new { starter = starterPrice, professional = professionalPrice });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[GetPricingConfig Failed] {ex.Message}");
+            return Ok(new { starter = "49", professional = "99" });
+        }
+    }
+
     [HttpPost("consultation-request")]
     public async Task<IActionResult> SubmitConsultationRequest([FromBody] ConsultationRequestModel model)
     {

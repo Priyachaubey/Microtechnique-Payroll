@@ -5,6 +5,8 @@ export const superAdminApi = {
   getPendingAdmins: () => apiClient.get('/SuperAdmin/admins/pending'),
   getStats: () => apiClient.get('/SuperAdmin/stats'),
   getEmployeePrice: () => apiClient.get('/SuperAdmin/config/employee_price_inr'),
+  getPricingConfig: () => apiClient.get('/SuperAdmin/pricing-config'),
+  savePricingConfig: (data) => apiClient.patch('/SuperAdmin/pricing-config', data),
   
   approveAdmin: (empId) => apiClient.patch(`/SuperAdmin/admins/${empId}/approve`),
   revokeAdmin: (empId, data) => apiClient.patch(`/SuperAdmin/admins/${empId}/revoke`, data),

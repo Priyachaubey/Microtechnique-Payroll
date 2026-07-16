@@ -213,7 +213,7 @@ export default function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/live-monitoring" element={
-                  <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TeamLead']}>
+                  <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
                     <LiveMonitoringPage />
                   </ProtectedRoute>
                 } />

@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 // Base employee nav items (shared by Employee, TeamLead, Manager)
 const EMPLOYEE_BASE_NAV = [
   { path: '/employee', icon: 'dashboard', label: 'Dashboard' },
-  { path: '/employee/attendance', icon: 'calendar_month', label: 'Attendance' },
+  { path: '/employee/attendance', icon: 'calendar_month', label: 'My Attendance' },
   { path: '/employee/projects', icon: 'folder_open', label: 'Projects' },
   { path: '/employee/worklogs', icon: 'schedule', label: 'Work Logs' },
   { path: '/employee/salary', icon: 'currency_rupee', label: 'Payroll / CTC' },
@@ -25,11 +25,9 @@ const EMPLOYEE_BASE_NAV = [
   { path: '/employee/profile', icon: 'person', label: 'Profile' },
 ];
 
-// Extra items for TeamLead (after Dashboard)
 const TL_EXTRA_NAV = [
   { path: '/employee/all-employees', icon: 'groups', label: 'Team Members' },
   { path: '/admin/attendance', icon: 'event_available', label: 'Team Attendance' },
-  { path: '/admin/live-monitoring', icon: 'videocam', label: 'Live Monitoring' },
 ];
 
 // Extra items for Manager (after Dashboard)

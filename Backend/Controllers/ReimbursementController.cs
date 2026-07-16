@@ -129,6 +129,21 @@ namespace Backend.Controllers
 
             if (affected == 0) return NotFound(new { message = "Claim not found" });
 
+            // Notify Employee
+            var getEmpSql = "SELECT empid FROM t_reimbursements WHERE claimid = @Id";
+            var targetEmpId = await conn.ExecuteScalarAsync<int>(getEmpSql, new { Id = id });
+            
+            var notifySql = @"
+                INSERT INTO t_notices (adminid, spaceid, employeeid, noticetext, totype, createdat, status, eventtype, targetrole, is_read_employee)
+                VALUES (@AdminId, @SpaceId, @EmpId, @NoticeText, 'Notification', NOW(), 'Open', 'System', 'Employee', false)
+            ";
+            await conn.ExecuteAsync(notifySql, new {
+                AdminId = adminId,
+                SpaceId = spaceId,
+                EmpId = targetEmpId,
+                NoticeText = $"Your reimbursement claim #{id} was {req.Status.ToLower()}."
+            });
+
             return Ok(new { message = $"Claim {req.Status.ToLower()} successfully" });
         }
     }
