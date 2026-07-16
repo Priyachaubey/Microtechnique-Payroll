@@ -217,12 +217,12 @@ export default function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/profile" element={
-                  <ProtectedRoute allowedRoles={['Admin']}>
+                  <ProtectedRoute allowedRoles={['Admin', 'HR']}>
                     <ProfilePage />
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/profile/:empId" element={
-                  <ProtectedRoute allowedRoles={['Admin']}>
+                  <ProtectedRoute allowedRoles={['Admin', 'HR']}>
                     <ProfilePage />
                   </ProtectedRoute>
                 } />
