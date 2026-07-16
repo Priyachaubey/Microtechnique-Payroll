@@ -183,11 +183,11 @@ export default function AppLayout({ children, role = 'employee' }) {
   // Determine nav based on actual user role (not just the `role` prop)
   const actualRole = user?.role || 'Employee';
   let navItems;
-  if (role === 'superadmin' || actualRole === 'SuperAdmin') {
+  if (actualRole === 'SuperAdmin') {
     navItems = NAV_ITEMS.superadmin;
-  } else if (role === 'admin' || actualRole === 'Admin') {
+  } else if (actualRole === 'Admin') {
     navItems = NAV_ITEMS.admin;
-  } else if (role === 'hr' || actualRole === 'HR') {
+  } else if (actualRole === 'HR') {
     navItems = NAV_ITEMS.hr;
   } else {
     // For employee layout — build role-aware nav
@@ -240,7 +240,7 @@ export default function AppLayout({ children, role = 'employee' }) {
           </div>
           <div>
             <div className="brand-name" style={{ color: '#6B21A8', textTransform: 'uppercase', fontSize: '11px', fontWeight: 800, letterSpacing: '0.03em' }}>Microtechnique Payroll</div>
-            <div className="brand-role">{getRoleLabel(role === 'admin' ? 'Admin' : actualRole)}</div>
+            <div className="brand-role">{getRoleLabel(actualRole)}</div>
           </div>
         </div>
 
