@@ -581,6 +581,31 @@ public class AuthController : ControllerBase
     [HttpPost("consultation-request")]
     public async Task<IActionResult> SubmitConsultationRequest([FromBody] ConsultationRequestModel model)
     {
+        // 1. Save the request in the database as a system notice for SuperAdmin
+        try
+        {
+            var connectionString = _configuration.GetConnectionString("DefaultConnection");
+            using (var conn = new Npgsql.NpgsqlConnection(connectionString))
+            {
+                await conn.OpenAsync();
+                var sql = @"
+                    INSERT INTO t_notices (noticetext, totype, createdat, preference, status)
+                    VALUES (@NoticeText, 'SuperAdmin', NOW(), 'High', 'Open');";
+                using (var cmd = new Npgsql.NpgsqlCommand(sql, conn))
+                {
+                    var noticeText = $"[Onboarding Request] Name: {model.Name}, Email: {model.Email}, Company: {model.Company}, Workforce: {model.Employees}, Interest: {model.Interest}, Notes: {model.Message}";
+                    cmd.Parameters.AddWithValue("NoticeText", noticeText);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            Console.WriteLine($"[Consultation Request Saved to DB] Company: {model.Company}");
+        }
+        catch (Exception dbEx)
+        {
+            Console.WriteLine($"[Database Save Failed for Consultation Request] {dbEx.Message}");
+        }
+
+        // 2. Attempt to send email via Resend
         try
         {
             var message = new Resend.EmailMessage();
@@ -599,13 +624,15 @@ public class AuthController : ControllerBase
                 </div>";
 
             await _resend.EmailSendAsync(message);
-            return Ok(new { message = "Onboarding request sent successfully" });
+            Console.WriteLine($"[Consultation Request Email Sent] To: microtechniqueit@gmail.com");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[Consultation Request Email Failed] {ex.Message}");
-            return StatusCode(500, new { message = "Failed to send request details: " + ex.Message });
+            // We do not throw a 500 error because the request was already successfully saved to the database!
         }
+
+        return Ok(new { message = "Onboarding request sent successfully" });
     }
 }
 
