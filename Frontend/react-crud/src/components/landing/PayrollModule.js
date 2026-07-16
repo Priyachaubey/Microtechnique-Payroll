@@ -278,7 +278,7 @@ export default function PayrollModule({ theme }) {
             </div>
 
             {/* Right: Output Savings Board */}
-            <div className={`border p-6 sm:p-8 rounded-xl flex flex-col justify-between shadow-2xl relative ${
+            <div className={`lg:col-span-5 border p-6 sm:p-8 rounded-xl flex flex-col justify-between shadow-2xl relative ${
               isDark ? "glass bg-white/[0.03] border-white/10" : "bg-slate-50 border-slate-200"
             }`}>
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />

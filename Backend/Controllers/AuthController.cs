@@ -577,6 +577,46 @@ public class AuthController : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    [HttpPost("consultation-request")]
+    public async Task<IActionResult> SubmitConsultationRequest([FromBody] ConsultationRequestModel model)
+    {
+        try
+        {
+            var message = new Resend.EmailMessage();
+            message.From = "Microtechnique Onboarding <onboarding@resend.dev>";
+            message.To.Add("microtechniqueit@gmail.com");
+            message.Subject = $"New Setup Consultation Request from {model.Company}";
+            message.HtmlBody = $@"
+                <div style='font-family:sans-serif; line-height:1.6; max-width:600px; margin:0 auto; padding:20px; border:1px solid #eee; border-radius:10px;'>
+                    <h2 style='color:#3b82f6;'>Onboarding Setup Request</h2>
+                    <p><strong>Full Name:</strong> {model.Name}</p>
+                    <p><strong>Work Email:</strong> {model.Email}</p>
+                    <p><strong>Company Name:</strong> {model.Company}</p>
+                    <p><strong>Workforce Size:</strong> {model.Employees}</p>
+                    <p><strong>Primary Solution Interest:</strong> {model.Interest}</p>
+                    <p><strong>Consulting Notes:</strong> {model.Message}</p>
+                </div>";
+
+            await _resend.EmailSendAsync(message);
+            return Ok(new { message = "Onboarding request sent successfully" });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Consultation Request Email Failed] {ex.Message}");
+            return StatusCode(500, new { message = "Failed to send request details: " + ex.Message });
+        }
+    }
+}
+
+public class ConsultationRequestModel
+{
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Company { get; set; } = string.Empty;
+    public string Employees { get; set; } = string.Empty;
+    public string Interest { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
 }
 
 public class LoginRequest

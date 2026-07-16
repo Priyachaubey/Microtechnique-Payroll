@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, CheckCircle2, ShieldCheck, HelpCircle, FileText, ArrowRight } from 'lucide-react';
+import axios from 'axios';
 
 export default function DemoModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({
@@ -12,11 +13,23 @@ export default function DemoModal({ isOpen, onClose }) {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email) return;
-    setSubmitted(true);
+    try {
+      setLoading(true);
+      setErrorMsg('');
+      await axios.post('/api/Auth/consultation-request', formData);
+      setSubmitted(true);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(err.response?.data?.message || 'Failed to submit onboarding request. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -140,14 +153,22 @@ export default function DemoModal({ isOpen, onClose }) {
               />
             </div>
 
-            {/* Submit Button */}
+             {/* Submit Button */}
             <button
               id="submit-registration-form"
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-650 hover:from-blue-500 hover:to-indigo-555 text-white font-semibold text-sm py-3.5 rounded-xl transition shadow-xl shadow-blue-950/30 flex items-center justify-center space-x-2 border border-blue-500/20 cursor-pointer"
+              disabled={loading}
+              className={`w-full bg-gradient-to-r from-blue-600 to-indigo-650 hover:from-blue-500 hover:to-indigo-555 text-white font-semibold text-sm py-3.5 rounded-xl transition shadow-xl shadow-blue-950/30 flex items-center justify-center space-x-2 border border-blue-500/20 cursor-pointer ${
+                loading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
             >
-              <span>Submit Request & Setup Slot &rarr;</span>
+              <span>{loading ? 'Sending Request...' : 'Submit Request & Setup Slot →'}</span>
             </button>
+            {errorMsg && (
+              <p className="text-red-500 text-xs font-semibold text-center mt-2 animate-pulse">
+                ❌ {errorMsg}
+              </p>
+            )}
           </form>
         ) : (
           /* Successful Submission Screen */
