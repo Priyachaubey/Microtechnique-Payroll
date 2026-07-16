@@ -30,19 +30,19 @@ export default function HRDashboard() {
 
   return (
     <AppLayout>
-      <div className="dashboard-header fade-in">
-        <div>
-          <h1 className="dashboard-title">
+      <div className="page-content fade-in">
+        {/* Header */}
+        <div style={{ marginBottom: 28 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, marginBottom: 4 }}>
             HR Dashboard 
-            <span className="badge badge-purple" style={{ marginLeft: 12, fontSize: 12, verticalAlign: 'middle' }}>
+            <span className="badge badge-purple" style={{ marginLeft: 12, fontSize: 12, verticalAlign: 'middle', background: 'var(--primary-100)', color: 'var(--primary-700)' }}>
               Human Resources
             </span>
           </h1>
-          <p className="dashboard-subtitle">Manage recruitment, compliance, and employee relations.</p>
+          <p style={{ fontSize: 14, color: 'var(--gray-500)' }}>Manage recruitment, compliance, and employee relations.</p>
         </div>
-      </div>
 
-      <div className="stats-grid fade-in" style={{ animationDelay: '0.1s' }}>
+        <div className="grid grid-4 fade-in" style={{ animationDelay: '0.1s', marginBottom: 24 }}>
         <MetricCard
           icon="groups"
           iconBg="#EEF2FF"
@@ -113,6 +113,7 @@ export default function HRDashboard() {
             </p>
           </div>
         </div>
+      </div>
       </div>
     </AppLayout>
   );
