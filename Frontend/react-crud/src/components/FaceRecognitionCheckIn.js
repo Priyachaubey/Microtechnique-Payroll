@@ -24,12 +24,10 @@ export default function FaceRecognitionCheckIn({ isOpen, onClose, onSuccess }) {
 
   const startCamera = async () => {
     try {
-      // 0. Load models first
-      await Promise.all([
-        faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
-        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-        faceapi.nets.faceRecognitionNet.loadFromUri('/models')
-      ]);
+      // 0. Load models sequentially to prevent face-api.js internal buffer collisions
+      await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
+      await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+      await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
 
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
       setStream(mediaStream);
