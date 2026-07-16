@@ -5,6 +5,7 @@ import { useAuth } from '../AuthContext';
 import { profileApi } from '../api/profile';
 import toast from 'react-hot-toast';
 import ProfileImage from '../components/ProfileImage';
+import { useQueryClient } from '@tanstack/react-query';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const DOCUMENT_TYPES = [
@@ -49,6 +50,7 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const { empId } = useParams();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const targetEmpId = empId ? parseInt(empId, 10) : null;
   const isReadOnly = false;
 
@@ -328,6 +330,7 @@ export default function ProfilePage() {
       const r = await profileApi.uploadPhoto(photoFile);
       setPhotoPreview(profileApi.getFileUrl(r.data.photoUrl));
       setPhotoFile(null);
+      queryClient.invalidateQueries(['myProfileAvatar']);
       toast.success('✅ Profile photo updated!');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Photo upload failed');
