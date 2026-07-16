@@ -25,7 +25,7 @@ export default function FaceRecognitionCheckIn({ isOpen, onClose, onSuccess }) {
   const startCamera = async () => {
     try {
       // 0. Load models from CDN to avoid local file corruption issues
-      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+      const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
       await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
       await faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL);
       await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
