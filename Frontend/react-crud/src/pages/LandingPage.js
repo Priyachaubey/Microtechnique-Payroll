@@ -342,7 +342,7 @@ export default function LandingPage() {
 
       {/* Floating WhatsApp Icon */}
       <a
-        href="https://wa.me/919999999999?text=Hi!%20I'm%20interested%20in%20Microtechnique%20Payroll."
+        href="https://wa.me/916355997080?text=Hi!%20I'm%20interested%20in%20Microtechnique%20Payroll."
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 bg-[#25D366] text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform duration-300 z-50 flex items-center justify-center cursor-pointer hover:bg-[#20ba5a]"

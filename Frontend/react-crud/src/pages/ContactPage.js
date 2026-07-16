@@ -4,11 +4,20 @@ import Footer from '../components/landing/Footer';
 import DemoModal from '../components/landing/DemoModal';
 import { Mail, Phone, MapPin, Send, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 
 export default function ContactPage() {
   const [theme, setTheme] = useState('dark');
   const [demoModalOpen, setDemoModalOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    company: '',
+    employees: '1-50',
+    message: ''
+  });
 
   const toggleTheme = () => {
     setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
@@ -16,10 +25,23 @@ export default function ContactPage() {
 
   const isDark = theme === 'dark';
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
-    toast.success("Message sent! Our team will contact you shortly.");
+    if (!formData.name || !formData.email || !formData.company || !formData.message) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+    try {
+      setLoading(true);
+      await axios.post('/api/Auth/contact-request', formData);
+      setSubmitted(true);
+      toast.success("Message sent! Our team will contact you shortly.");
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to send message. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -97,7 +119,7 @@ export default function ContactPage() {
             {/* Direct WhatsApp Action */}
             <div className={`mt-8 pt-8 border-t ${isDark ? "border-white/5" : "border-slate-200"}`}>
               <a
-                href="https://wa.me/919999999999?text=Hi!%20I'd%20like%20to%20speak%20with%20a%20representative%20about%2520Microtechnique%20Payroll."
+                href="https://wa.me/916355997080?text=Hi!%20I'd%20like%20to%20speak%20with%20a%20representative%20about%20Microtechnique%20Payroll."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-4.5 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold text-sm transition duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#25d366]/10"
@@ -127,7 +149,9 @@ export default function ContactPage() {
                       type="text"
                       required
                       placeholder="John Doe"
-                      className={`px-4 py-3 rounded-xl border focus:outline-none transition ${
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className={`px-4 py-3 rounded-xl border focus:outline-none transition placeholder-slate-500 ${
                         isDark ? "bg-slate-950 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
                       }`}
                     />
@@ -141,7 +165,9 @@ export default function ContactPage() {
                       type="email"
                       required
                       placeholder="you@company.com"
-                      className={`px-4 py-3 rounded-xl border focus:outline-none transition ${
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className={`px-4 py-3 rounded-xl border focus:outline-none transition placeholder-slate-500 ${
                         isDark ? "bg-slate-950 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
                       }`}
                     />
@@ -157,8 +183,10 @@ export default function ContactPage() {
                       type="text"
                       required
                       placeholder="Microtechnique Pvt Ltd"
-                      className={`px-4 py-3 rounded-xl border focus:outline-none transition ${
-                        isDark ? "bg-slate-955 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
+                      value={formData.company}
+                      onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                      className={`px-4 py-3 rounded-xl border focus:outline-none transition placeholder-slate-500 ${
+                        isDark ? "bg-slate-950 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
                       }`}
                     />
                   </div>
@@ -169,8 +197,10 @@ export default function ContactPage() {
                     </label>
                     <select
                       required
+                      value={formData.employees}
+                      onChange={(e) => setFormData({ ...formData, employees: e.target.value })}
                       className={`px-4 py-3 rounded-xl border focus:outline-none transition ${
-                        isDark ? "bg-slate-955 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
+                        isDark ? "bg-slate-950 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
                       }`}
                     >
                       <option value="1-50">1 - 50 employees</option>
@@ -189,18 +219,23 @@ export default function ContactPage() {
                     required
                     rows={4}
                     placeholder="Describe your query or migration requirements..."
-                    className={`px-4 py-3 rounded-xl border focus:outline-none transition ${
-                      isDark ? "bg-slate-955 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
+                    value={formData.message}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    className={`px-4 py-3 rounded-xl border focus:outline-none transition placeholder-slate-500 ${
+                      isDark ? "bg-slate-950 border-white/10 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
                     }`}
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-4 rounded-xl bg-blue-650 hover:bg-blue-550 text-white font-bold text-sm transition duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                  disabled={loading}
+                  className={`w-full py-4 rounded-xl bg-blue-650 hover:bg-blue-550 text-white font-bold text-sm transition duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg ${
+                    loading ? "opacity-75 cursor-not-allowed" : ""
+                  }`}
                 >
                   <Send className="w-4 h-4" />
-                  <span>Send Message</span>
+                  <span>{loading ? "Sending Message..." : "Send Message"}</span>
                 </button>
               </form>
             ) : (

@@ -634,6 +634,61 @@ public class AuthController : ControllerBase
 
         return Ok(new { message = "Onboarding request sent successfully" });
     }
+
+    [HttpPost("contact-request")]
+    public async Task<IActionResult> SubmitContactRequest([FromBody] ContactRequestModel model)
+    {
+        // 1. Save the request in the database as a system notice for SuperAdmin
+        try
+        {
+            var connectionString = _configuration.GetConnectionString("DefaultConnection");
+            using (var conn = new Npgsql.NpgsqlConnection(connectionString))
+            {
+                await conn.OpenAsync();
+                var sql = @"
+                    INSERT INTO t_notices (noticetext, totype, createdat, preference, status)
+                    VALUES (@NoticeText, 'SuperAdmin', NOW(), 'High', 'Open');";
+                using (var cmd = new Npgsql.NpgsqlCommand(sql, conn))
+                {
+                    var noticeText = $"[Contact Us Message] Name: {model.Name}, Email: {model.Email}, Company: {model.Company}, Workforce: {model.Employees}, Message: {model.Message}";
+                    cmd.Parameters.AddWithValue("NoticeText", noticeText);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            Console.WriteLine($"[Contact Request Saved to DB] Company: {model.Company}");
+        }
+        catch (Exception dbEx)
+        {
+            Console.WriteLine($"[Database Save Failed for Contact Request] {dbEx.Message}");
+        }
+
+        // 2. Attempt to send email via Resend
+        try
+        {
+            var message = new Resend.EmailMessage();
+            message.From = "Microtechnique Contact <onboarding@resend.dev>";
+            message.To.Add("microtechniqueit@gmail.com");
+            message.Subject = $"New Contact Us Inquiry from {model.Name} ({model.Company})";
+            message.HtmlBody = $@"
+                <div style='font-family:sans-serif; line-height:1.6; max-width:600px; margin:0 auto; padding:20px; border:1px solid #eee; border-radius:10px;'>
+                    <h2 style='color:#10b981;'>Contact Us Message</h2>
+                    <p><strong>Full Name:</strong> {model.Name}</p>
+                    <p><strong>Work Email:</strong> {model.Email}</p>
+                    <p><strong>Company Name:</strong> {model.Company}</p>
+                    <p><strong>Workforce Size:</strong> {model.Employees}</p>
+                    <p><strong>Message / Query:</strong> {model.Message}</p>
+                </div>";
+
+            await _resend.EmailSendAsync(message);
+            Console.WriteLine($"[Contact Request Email Sent] To: microtechniqueit@gmail.com");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Contact Request Email Failed] {ex.Message}");
+        }
+
+        return Ok(new { message = "Message sent successfully" });
+    }
 }
 
 public class ConsultationRequestModel
@@ -643,6 +698,15 @@ public class ConsultationRequestModel
     public string Company { get; set; } = string.Empty;
     public string Employees { get; set; } = string.Empty;
     public string Interest { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+}
+
+public class ContactRequestModel
+{
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Company { get; set; } = string.Empty;
+    public string Employees { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
 }
 
