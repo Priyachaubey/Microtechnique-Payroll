@@ -745,6 +745,12 @@ export default function ProfilePage() {
                   </div>
                 )}
 
+                {profile?.profilePhotoUrl && !photoFile && (
+                  <div style={{ marginTop: 16, fontSize: 13, color: '#10B981', fontWeight: 600 }}>
+                    ✅ This photo is saved. If you want to change it, click 'Choose Photo', otherwise this photo will be used for AI Check-in.
+                  </div>
+                )}
+
                 <input
                   ref={photoInputRef}
                   type="file"
