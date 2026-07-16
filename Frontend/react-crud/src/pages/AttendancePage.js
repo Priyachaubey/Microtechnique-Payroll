@@ -61,8 +61,8 @@ export default function AttendancePage({ isAdmin }) {
     const loadModels = async () => {
       try {
         // Load sequentially to prevent internal face-api.js buffer collision
-        await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
-        await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+        await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+        await faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models');
         await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
         console.log('Face API models loaded');
       } catch (e) {
@@ -407,7 +407,10 @@ export default function AttendancePage({ isAdmin }) {
       const imgObjectUrl = URL.createObjectURL(imgBlob);
       
       const referenceImage = await faceapi.fetchImage(imgObjectUrl);
-      const referenceDetection = await faceapi.detectSingleFace(referenceImage).withFaceLandmarks().withFaceDescriptor();
+      const referenceDetection = await faceapi.detectSingleFace(
+        referenceImage,
+        new faceapi.TinyFaceDetectorOptions()
+      ).withFaceLandmarks(true).withFaceDescriptor();
       URL.revokeObjectURL(imgObjectUrl);
       
       if (!referenceDetection) {
@@ -431,7 +434,10 @@ export default function AttendancePage({ isAdmin }) {
         scanAttempts++;
         
         try {
-          const detection = await faceapi.detectSingleFace(videoEl).withFaceLandmarks().withFaceDescriptor();
+          const detection = await faceapi.detectSingleFace(
+            videoEl,
+            new faceapi.TinyFaceDetectorOptions()
+          ).withFaceLandmarks(true).withFaceDescriptor();
           if (detection) {
             const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
             if (bestMatch.label === 'person 1' || bestMatch.label === 'unknown') {
