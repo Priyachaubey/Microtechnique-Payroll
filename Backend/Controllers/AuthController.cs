@@ -242,7 +242,8 @@ public class AuthController : ControllerBase
                 return Conflict(new { message = "An account with this email already exists." });
 
             string role = request.Role ?? "Employee";
-            string status = role == "Admin" ? "Active" : "Pending";
+            // Admin accounts start as Pending to require SuperAdmin approval
+            string status = role == "SuperAdmin" ? "Active" : "Pending";
 
             // Validate role-based fields
             if (role == "Admin" && string.IsNullOrEmpty(request.SpaceName))
@@ -337,31 +338,76 @@ public class AuthController : ControllerBase
                 _cache.Set(cacheKey, otp, TimeSpan.FromMinutes(30));
             }
 
-            // Send Email via Resend SDK
+            // Send Email logic
             try
             {
-                var message = new Resend.EmailMessage();
-                message.From = "VeriFind <otp@support.payrollmicrotechnique.store>";
-                message.To.Add(targetEmail);
-                message.Subject = "Password Reset OTP";
-                message.HtmlBody = $@"
-                    <div style='font-family:sans-serif'>
-                        <h2>Your OTP Code</h2>
-                        <h1>{otp}</h1>
-                        <p>This OTP is valid for {(isSuperAdmin ? "30" : "5")} minutes.</p>
-                    </div>";
+                bool useGlobalResend = true;
 
-                await _resend.EmailSendAsync(message);
-                System.Console.WriteLine($"[Resend SDK] Successfully sent password reset OTP to {targetEmail}. OTP: {otp}");
+                // Try to use tenant SMTP settings if not SuperAdmin/Admin
+                if (!isSuperAdmin && user != null && user.SpaceId.HasValue)
+                {
+                    var spaceQuery = "SELECT smtp_host, smtp_port, smtp_username, smtp_password, smtp_from_email FROM t_spaces WHERE spaceid = @SpaceId";
+                    var spaceSmtp = await _userRepository.GetConnection().QueryFirstOrDefaultAsync<dynamic>(spaceQuery, new { SpaceId = user.SpaceId });
+
+                    if (spaceSmtp != null && !string.IsNullOrEmpty(spaceSmtp.smtp_host) && !string.IsNullOrEmpty(spaceSmtp.smtp_from_email))
+                    {
+                        useGlobalResend = false;
+                        
+                        var emailMessage = new MimeKit.MimeMessage();
+                        emailMessage.From.Add(new MimeKit.MailboxAddress("Support", spaceSmtp.smtp_from_email));
+                        emailMessage.To.Add(new MimeKit.MailboxAddress("", targetEmail));
+                        emailMessage.Subject = "Password Reset OTP";
+                        
+                        var bodyBuilder = new MimeKit.BodyBuilder
+                        {
+                            HtmlBody = $@"
+                                <div style='font-family:sans-serif'>
+                                    <h2>Your OTP Code</h2>
+                                    <h1>{otp}</h1>
+                                    <p>This OTP is valid for 5 minutes.</p>
+                                </div>"
+                        };
+                        emailMessage.Body = bodyBuilder.ToMessageBody();
+
+                        using (var client = new MailKit.Net.Smtp.SmtpClient())
+                        {
+                            await client.ConnectAsync(spaceSmtp.smtp_host, (int)spaceSmtp.smtp_port, MailKit.Security.SecureSocketOptions.StartTls);
+                            if (!string.IsNullOrEmpty(spaceSmtp.smtp_username))
+                            {
+                                await client.AuthenticateAsync(spaceSmtp.smtp_username, spaceSmtp.smtp_password);
+                            }
+                            await client.SendAsync(emailMessage);
+                            await client.DisconnectAsync(true);
+                        }
+                        
+                        Console.WriteLine($"[Tenant SMTP] Successfully sent OTP to {targetEmail} using {spaceSmtp.smtp_from_email}.");
+                    }
+                }
+
+                if (useGlobalResend)
+                {
+                    var message = new Resend.EmailMessage();
+                    message.From = "VeriFind <microtechniqueit@gmail.com>"; // Global SuperAdmin/Admin Email
+                    message.To.Add(targetEmail);
+                    message.Subject = "Password Reset OTP";
+                    message.HtmlBody = $@"
+                        <div style='font-family:sans-serif'>
+                            <h2>Your OTP Code</h2>
+                            <h1>{otp}</h1>
+                            <p>This OTP is valid for {(isSuperAdmin ? "30" : "5")} minutes.</p>
+                        </div>";
+
+                    await _resend.EmailSendAsync(message);
+                    Console.WriteLine($"[Resend SDK] Successfully sent password reset OTP to {targetEmail}. OTP: {otp}");
+                }
             }
             catch (Exception ex)
             {
-                System.Console.WriteLine("==========================================================================");
-                System.Console.WriteLine($"[Resend DEV MOCK] FAILED TO SEND REAL EMAIL via SDK: {ex.Message}");
-                System.Console.WriteLine($"[Resend DEV MOCK] TARGET: {targetEmail}");
-                System.Console.WriteLine($"[Resend DEV MOCK] SUBJECT: Password Reset OTP");
-                System.Console.WriteLine($"[Resend DEV MOCK] BODY: Your OTP is: {otp}");
-                System.Console.WriteLine("==========================================================================");
+                Console.WriteLine("==========================================================================");
+                Console.WriteLine($"[EMAIL FAILED] {ex.Message}");
+                Console.WriteLine($"[MOCK] TARGET: {targetEmail}");
+                Console.WriteLine($"[MOCK] OTP: {otp}");
+                Console.WriteLine("==========================================================================");
             }
 
             return Ok(new { message = "If your email is registered in our system, a 6-digit OTP has been sent." });

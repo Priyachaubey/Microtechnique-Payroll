@@ -78,6 +78,16 @@ export default function ProfilePage() {
   const [paymentErrors, setPaymentErrors] = useState({});
   const [savingPayment, setSavingPayment] = useState(false);
 
+  // SMTP Settings form
+  const [smtpForm, setSmtpForm] = useState({
+    smtpHost: '',
+    smtpPort: '',
+    smtpUsername: '',
+    smtpPassword: '',
+    smtpFromEmail: ''
+  });
+  const [savingSmtp, setSavingSmtp] = useState(false);
+
   // Photo
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
@@ -154,12 +164,28 @@ export default function ProfilePage() {
           setSavedDocs([]);
           setDocRows([
             { type: 'PAN', number: '', file: null, fileName: '' },
-            { type: 'Aadhar', number: '', file: null, fileName: '' },
+            { type: 'Aadhar', number: '', file: null, fileName: '' }
           ]);
         }
+
+        if (p.role === 'Admin' && !targetEmpId) {
+          profileApi.getSmtpSettings().then(res => {
+            if (res.data) {
+              setSmtpForm({
+                smtpHost: res.data.smtpHost || '',
+                smtpPort: res.data.smtpPort || '',
+                smtpUsername: res.data.smtpUsername || '',
+                smtpPassword: res.data.smtpPassword || '',
+                smtpFromEmail: res.data.smtpFromEmail || ''
+              });
+            }
+          }).catch(e => console.log('No SMTP settings or failed to load'));
+        }
       })
-      .catch((err) => console.warn('Failed to load profile silently', err))
-      .finally(() => setLoading(false));
+      .catch(err => {
+        toast.error('Failed to load profile');
+        console.error(err);
+      }).finally(() => setLoading(false));
   }, [targetEmpId]);
 
   useEffect(() => { loadProfile(); }, [loadProfile]);
@@ -258,6 +284,24 @@ export default function ProfilePage() {
       toast.error(err.response?.data?.message || 'Failed to update payment details');
     } finally {
       setSavingPayment(false);
+    }
+  };
+
+  // ── SMTP Settings Submit ───────────────────────────────────────────────────
+  const handleSaveSmtp = async (e) => {
+    e.preventDefault();
+    if (isReadOnly) return;
+    setSavingSmtp(true);
+    try {
+      await profileApi.updateSmtpSettings({
+        ...smtpForm,
+        smtpPort: parseInt(smtpForm.smtpPort, 10) || 587
+      });
+      toast.success('✅ SMTP settings updated successfully!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update SMTP settings');
+    } finally {
+      setSavingSmtp(false);
     }
   };
 
@@ -473,6 +517,7 @@ export default function ProfilePage() {
             ['photo', 'photo_camera', 'Profile Photo'],
             ['documents', 'folder_open', 'Documents'],
             ['payment', 'account_balance', 'Payment Details'],
+            ...(profile?.role === 'Admin' && !targetEmpId ? [['smtp', 'mail', 'Email Settings']] : [])
           ].map(([key, icon, label]) => (
             <button
               key={key}

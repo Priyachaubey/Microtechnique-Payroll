@@ -250,6 +250,11 @@ export const assetApi = {
   deleteAsset: (id) => apiClient.delete(`/Asset/${id}`)
 };
 
+export const profileApi = {
+  getSmtpSettings: () => apiClient.get('/Profile/smtp-settings'),
+  updateSmtpSettings: (data) => apiClient.post('/Profile/smtp-settings', data),
+};
+
 export const supportApi = {
   getTickets: () => apiClient.get('/Support'),
   createTicket: (data) => apiClient.post('/Support', data),

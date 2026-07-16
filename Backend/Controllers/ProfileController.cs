@@ -337,6 +337,92 @@ public class ProfileController : ControllerBase
             return StatusCode(500, new { message = "Failed to change password." });
         }
     }
+
+    public class SmtpSettingsRequest
+    {
+        public string SmtpHost { get; set; }
+        public int SmtpPort { get; set; }
+        public string SmtpUsername { get; set; }
+        public string SmtpPassword { get; set; }
+        public string SmtpFromEmail { get; set; }
+    }
+
+    [HttpGet("smtp-settings")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetSmtpSettings()
+    {
+        try
+        {
+            var spaceId = GetSpaceId();
+            if (spaceId <= 0) return BadRequest(new { message = "Invalid space ID." });
+
+            var query = "SELECT smtp_host, smtp_port, smtp_username, smtp_password, smtp_from_email FROM t_spaces WHERE spaceid = @SpaceId";
+            using var conn = new Npgsql.NpgsqlConnection(GetConnectionString());
+            var smtp = await Dapper.SqlMapper.QueryFirstOrDefaultAsync<dynamic>(conn, query, new { SpaceId = spaceId });
+
+            if (smtp == null) return NotFound(new { message = "Settings not found" });
+
+            return Ok(new
+            {
+                smtpHost = smtp.smtp_host,
+                smtpPort = smtp.smtp_port,
+                smtpUsername = smtp.smtp_username,
+                smtpPassword = smtp.smtp_password,
+                smtpFromEmail = smtp.smtp_from_email
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Profile] GetSmtpSettings error: {ex.Message}");
+            return StatusCode(500, new { message = "Failed to fetch SMTP settings" });
+        }
+    }
+
+    [HttpPost("smtp-settings")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateSmtpSettings([FromBody] SmtpSettingsRequest req)
+    {
+        try
+        {
+            var spaceId = GetSpaceId();
+            if (spaceId <= 0) return BadRequest(new { message = "Invalid space ID." });
+
+            var query = @"
+                UPDATE t_spaces 
+                SET smtp_host = @SmtpHost, 
+                    smtp_port = @SmtpPort, 
+                    smtp_username = @SmtpUsername, 
+                    smtp_password = @SmtpPassword, 
+                    smtp_from_email = @SmtpFromEmail
+                WHERE spaceid = @SpaceId";
+
+            using var conn = new Npgsql.NpgsqlConnection(GetConnectionString());
+            await Dapper.SqlMapper.ExecuteAsync(conn, query, new 
+            { 
+                req.SmtpHost, 
+                req.SmtpPort, 
+                req.SmtpUsername, 
+                req.SmtpPassword, 
+                req.SmtpFromEmail, 
+                SpaceId = spaceId 
+            });
+
+            return Ok(new { message = "SMTP settings updated successfully" });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Profile] UpdateSmtpSettings error: {ex.Message}");
+            return StatusCode(500, new { message = "Failed to update SMTP settings" });
+        }
+    }
+
+    private string GetConnectionString()
+    {
+        return new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json")
+            .Build().GetConnectionString("DefaultConnection");
+    }
 }
 
 public class UpdateBackupEmailRequest

@@ -45,7 +45,12 @@ CREATE TABLE IF NOT EXISTS t_spaces (
     type                VARCHAR(20) DEFAULT 'Department',
     enddate             DATE,
     workingdays         TEXT,
-    maxspaces           INT
+    maxspaces           INT,
+    smtp_host           VARCHAR(255),
+    smtp_port           INT,
+    smtp_username       VARCHAR(255),
+    smtp_password       VARCHAR(255),
+    smtp_from_email     VARCHAR(255)
 );
 
 -- [3] t_attendance
