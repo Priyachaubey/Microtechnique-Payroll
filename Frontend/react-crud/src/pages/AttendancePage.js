@@ -5,6 +5,7 @@ import { attendanceApi } from '../api/attendance';
 import { usersApi } from '../api/index';
 import { worklogsApi } from '../api/worklogs';
 import { profileApi } from '../api/profile';
+import apiClient from '../api/client';
 import { BACKEND_ORIGIN } from '../config';
 import * as faceapi from 'face-api.js';
 import { CalendarSkeleton } from '../components/Skeletons';
@@ -397,22 +398,13 @@ export default function AttendancePage({ isAdmin }) {
       if (!profilePhoto) {
         throw new Error('No profile photo found. Please upload a photo in your Profile settings first.');
       }
-      
-      const referenceImageUrl = profileApi.getFileUrl(profilePhoto);
-      
-      // Fetch image with Authorization header
-      const token = localStorage.getItem('token');
-      const imgResponse = await fetch(referenceImageUrl, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      // Fetch image with apiClient to handle blob correctly and avoid CORS/auth issues
+      const empId = profileRes.data.empId || profileRes.data.empid;
+      const imgResponse = await apiClient.get(`/Profile/photo/${empId}`, {
+        responseType: "blob",
       });
       
-      if (!imgResponse.ok) {
-        throw new Error('Failed to load profile photo. Please try re-uploading your photo.');
-      }
-      
-      const imgBlob = await imgResponse.blob();
+      const imgBlob = imgResponse.data;
       const imgObjectUrl = URL.createObjectURL(imgBlob);
       
       const referenceImage = await faceapi.fetchImage(imgObjectUrl);

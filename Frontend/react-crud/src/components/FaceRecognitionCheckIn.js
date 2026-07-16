@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { attendanceApi } from '../api/attendance';
 import { profileApi } from '../api/profile';
+import apiClient from '../api/client';
 import * as faceapi from 'face-api.js';
 
 export default function FaceRecognitionCheckIn({ isOpen, onClose, onSuccess }) {
@@ -56,21 +57,14 @@ export default function FaceRecognitionCheckIn({ isOpen, onClose, onSuccess }) {
       }
       
       setScanProgress(40);
-      const referenceImageUrl = profileApi.getFileUrl(profilePhoto);
       
-      // Fetch image with Authorization header
-      const token = localStorage.getItem('token');
-      const imgResponse = await fetch(referenceImageUrl, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      // Fetch image with apiClient to handle blob correctly and avoid CORS/auth issues
+      const empId = profileRes.data.empId || profileRes.data.empid;
+      const imgResponse = await apiClient.get(`/Profile/photo/${empId}`, {
+        responseType: "blob",
       });
       
-      if (!imgResponse.ok) {
-        throw new Error('Failed to load profile photo. Please try re-uploading your photo.');
-      }
-      
-      const imgBlob = await imgResponse.blob();
+      const imgBlob = imgResponse.data;
       const imgObjectUrl = URL.createObjectURL(imgBlob);
       
       const referenceImage = await faceapi.fetchImage(imgObjectUrl);
