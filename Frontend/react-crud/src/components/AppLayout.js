@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { profileApi } from '../api/profile';
+import apiClient from '../api/client';
 import logoMicrotechnique from '../logo.png';
 import NotificationBell from './NotificationBell';
 import toast from 'react-hot-toast';
@@ -147,15 +148,12 @@ export default function AppLayout({ children, role = 'employee' }) {
       const photoUrl = res.data?.profilePhotoUrl || res.data?.profilephotourl;
       if (!photoUrl) return null;
 
-      const fullUrl = profileApi.getFileUrl(photoUrl);
-      const token = localStorage.getItem('token');
-      const imgRes = await fetch(fullUrl, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const empId = res.data.empId || res.data.empid;
+      const imgRes = await apiClient.get(`/Profile/photo/${empId}`, {
+        responseType: "blob",
       });
       
-      if (!imgRes.ok) return null;
-      
-      const blob = await imgRes.blob();
+      const blob = imgRes.data;
       return URL.createObjectURL(blob);
     },
     staleTime: 5 * 60 * 1000,
