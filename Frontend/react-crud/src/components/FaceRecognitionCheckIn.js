@@ -57,8 +57,27 @@ export default function FaceRecognitionCheckIn({ isOpen, onClose, onSuccess }) {
       
       setScanProgress(40);
       const referenceImageUrl = profileApi.getFileUrl(profilePhoto);
-      const referenceImage = await faceapi.fetchImage(referenceImageUrl);
+      
+      // Fetch image with Authorization header
+      const token = localStorage.getItem('token');
+      const imgResponse = await fetch(referenceImageUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!imgResponse.ok) {
+        throw new Error('Failed to load profile photo. Please try re-uploading your photo.');
+      }
+      
+      const imgBlob = await imgResponse.blob();
+      const imgObjectUrl = URL.createObjectURL(imgBlob);
+      
+      const referenceImage = await faceapi.fetchImage(imgObjectUrl);
       const referenceDetection = await faceapi.detectSingleFace(referenceImage).withFaceLandmarks().withFaceDescriptor();
+      
+      // Clean up the object URL
+      URL.revokeObjectURL(imgObjectUrl);
       
       if (!referenceDetection) {
         throw new Error('Could not detect a face in your profile photo. Please upload a clearer photo.');
