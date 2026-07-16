@@ -16,9 +16,14 @@ builder.Services.AddControllers()
 builder.Services.AddMemoryCache();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+var resendToken = builder.Configuration["Resend:ApiToken"];
+if (string.IsNullOrEmpty(resendToken) || resendToken == "YOUR_RESEND_API_TOKEN")
+{
+    resendToken = "re_Yb5aEZwg_7QCWZdiGJQsYVbJqSN9wKWZY";
+}
 builder.Services.AddResend(options =>
 {
-    options.ApiToken = builder.Configuration["Resend:ApiToken"] ?? "re_Yb5aEZwg_7QCWZdiGJQsYVbJqSN9wKWZY";
+    options.ApiToken = resendToken;
 });
 
 // Allow large multipart uploads for file uploads (profile photo + documents)
