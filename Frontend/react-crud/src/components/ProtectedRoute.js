@@ -21,6 +21,7 @@ export function ProtectedRoute({ children, allowedRoles }) {
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     if (user.role === 'SuperAdmin') return <Navigate to="/superadmin" replace />;
     if (user.role === 'Admin') return <Navigate to="/admin" replace />;
+    if (user.role === 'HR') return <Navigate to="/hr" replace />;
     return <Navigate to="/employee" replace />;
   }
 

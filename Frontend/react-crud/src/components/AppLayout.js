@@ -65,6 +65,14 @@ const NAV_ITEMS = {
     { path: '/admin/settings/payslip', icon: 'settings', label: 'Payslip Settings' },
     { path: '/admin/profile', icon: 'person', label: 'Profile' },
   ],
+  hr: [
+    { path: '/hr', icon: 'dashboard', label: 'HR Dashboard' },
+    { path: '/admin/recruitment', icon: 'work', label: 'Recruitment ATS' },
+    { path: '/admin/compliance', icon: 'gavel', label: 'Compliance' },
+    { path: '/admin/leaves', icon: 'event_busy', label: 'Manage Leaves' },
+    { path: '/admin/attendance', icon: 'event_available', label: 'Attendance' },
+    { path: '/admin/profile', icon: 'person', label: 'Profile' },
+  ],
 };
 
 const BOTTOM_NAV = {
@@ -82,6 +90,12 @@ const BOTTOM_NAV = {
     { path: '/employee/attendance', icon: 'calendar_month', label: 'Attendance' },
     { path: '/employee/projects', icon: 'folder_open', label: 'Projects' },
     { path: '/employee/profile', icon: 'person', label: 'Profile' },
+  ],
+  hr: [
+    { path: '/hr', icon: 'dashboard', label: 'Home' },
+    { path: '/admin/recruitment', icon: 'work', label: 'Recruitment' },
+    { path: '/admin/leaves', icon: 'event_busy', label: 'Leaves' },
+    { path: '/admin/profile', icon: 'person', label: 'Profile' },
   ],
 };
 
@@ -102,6 +116,7 @@ function getRoleLabel(role) {
   if (role === 'Manager') return 'Manager Portal';
   if (role === 'Admin') return 'Admin Portal';
   if (role === 'SuperAdmin') return 'SuperAdmin Portal';
+  if (role === 'HR') return 'HR Portal';
   return 'Employee Portal';
 }
 
@@ -168,15 +183,18 @@ export default function AppLayout({ children, role = 'employee' }) {
   // Determine nav based on actual user role (not just the `role` prop)
   const actualRole = user?.role || 'Employee';
   let navItems;
-  if (role === 'superadmin') {
+  if (role === 'superadmin' || actualRole === 'SuperAdmin') {
     navItems = NAV_ITEMS.superadmin;
-  } else if (role === 'admin') {
+  } else if (role === 'admin' || actualRole === 'Admin') {
     navItems = NAV_ITEMS.admin;
+  } else if (role === 'hr' || actualRole === 'HR') {
+    navItems = NAV_ITEMS.hr;
   } else {
     // For employee layout — build role-aware nav
     navItems = buildEmployeeNav(actualRole);
   }
-  const bottomItems = BOTTOM_NAV[role] || BOTTOM_NAV.employee;
+  
+  const bottomItems = BOTTOM_NAV[role] || BOTTOM_NAV[actualRole?.toLowerCase()] || BOTTOM_NAV.employee;
 
   // Close dropdown on outside click
   useEffect(() => {
