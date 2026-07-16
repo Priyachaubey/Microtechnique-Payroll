@@ -717,6 +717,123 @@ function AddSuperAdminModal({ onClose, onConfirm, loading }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// ADD COMPANY MODAL
+// ═══════════════════════════════════════════════════════════════════════
+
+function AddCompanyModal({ onClose, onConfirm, loading }) {
+  const [companyName, setCompanyName] = useState('');
+  const [adminName, setAdminName] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+    if (!companyName) { setError('Company Name is required.'); return; }
+    if (!adminName) { setError('Admin Name is required.'); return; }
+    if (!adminEmail) { setError('Admin Email is required.'); return; }
+    if (adminPassword.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    
+    onConfirm({ companyName, adminName, adminEmail, adminPassword });
+  };
+
+  const inputStyle = {
+    width: '100%', padding: '10px 14px', fontSize: 13, background: C.bg,
+    border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, outline: 'none',
+    boxSizing: 'border-box',
+  };
+
+  return (
+    <ModalOverlay onClose={onClose}>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: 'linear-gradient(135deg, #10b981, #059669)',
+            display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center',
+          }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#fff' }}>add_business</span>
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>Add New Company</div>
+            <div style={{ fontSize: 11, color: C.textMuted }}>Register a new workspace and tenant admin account</div>
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', color: C.danger, fontSize: 12, borderRadius: 8, marginBottom: 16, textAlign: 'left', fontWeight: 650 }}>
+          ⚠ {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14, textAlign: 'left' }}>
+        <div>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>
+            Company / Workspace Name <span style={{ color: C.danger }}>*</span>
+          </label>
+          <input
+            type="text"
+            value={companyName}
+            onChange={e => setCompanyName(e.target.value)}
+            placeholder="e.g. Microtechnique Pvt Ltd"
+            style={inputStyle}
+            disabled={loading}
+          />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>
+            Admin Full Name <span style={{ color: C.danger }}>*</span>
+          </label>
+          <input
+            type="text"
+            value={adminName}
+            onChange={e => setAdminName(e.target.value)}
+            placeholder="e.g. John Doe"
+            style={inputStyle}
+            disabled={loading}
+          />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>
+            Admin Email Address <span style={{ color: C.danger }}>*</span>
+          </label>
+          <input
+            type="email"
+            value={adminEmail}
+            onChange={e => setAdminEmail(e.target.value)}
+            placeholder="e.g. admin@company.com"
+            style={inputStyle}
+            disabled={loading}
+          />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>
+            Admin Password <span style={{ color: C.danger }}>*</span>
+          </label>
+          <input
+            type="password"
+            value={adminPassword}
+            onChange={e => setAdminPassword(e.target.value)}
+            placeholder="Min 6 characters"
+            style={inputStyle}
+            disabled={loading}
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 10 }}>
+          <button type="button" style={btn('ghost')} onClick={onClose} disabled={loading}>Cancel</button>
+          <button type="submit" style={btn('success')} disabled={loading}>
+            {loading ? 'Registering...' : '✓ Add Company'}
+          </button>
+        </div>
+      </form>
+    </ModalOverlay>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // MAIN DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -743,6 +860,7 @@ export default function SuperAdminDashboard() {
   const [limitsModal, setLimitsModal] = useState(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showAddSuperAdminModal, setShowAddSuperAdminModal] = useState(false);
+  const [showAddCompanyModal, setShowAddCompanyModal] = useState(false);
 
   // Get current sub-view
   const getActiveView = () => {
@@ -879,6 +997,27 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleAddCompany = async (data) => {
+    try {
+      setActionLoading(true);
+      await superAdminApi.registerCompany({
+        name: data.adminName,
+        email: data.adminEmail,
+        password: data.adminPassword,
+        spaceName: data.companyName,
+        gender: 'Male',
+        role: 'Admin'
+      });
+      toast.success("✅ Company workspace registered successfully! Go to 'Pending Approvals' tab to active it.");
+      setShowAddCompanyModal(false);
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to register company.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // ── Filter & Search Logic ───────────────────────────────────────────
 
   const getFilteredList = () => {
@@ -931,26 +1070,44 @@ export default function SuperAdminDashboard() {
             </div>
 
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-              <button
-                id="btn-add-superadmin"
-                style={{
-                  ...btn('primary'),
-                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                  boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
-                }}
-                onClick={() => setShowAddSuperAdminModal(true)}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>person_add</span>
-                Add SuperAdmin
-              </button>
-              <button
-                id="btn-superadmin-settings"
-                style={btn('outline')}
-                onClick={() => setShowSettingsModal(true)}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 15 }}>settings</span>
-                Settings
-              </button>
+              {(activeView === 'overview' || activeView === 'settings') && (
+                <>
+                  <button
+                    id="btn-add-superadmin"
+                    style={{
+                      ...btn('primary'),
+                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                      boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
+                    }}
+                    onClick={() => setShowAddSuperAdminModal(true)}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>person_add</span>
+                    Add SuperAdmin
+                  </button>
+                  <button
+                    id="btn-superadmin-settings"
+                    style={btn('outline')}
+                    onClick={() => setShowSettingsModal(true)}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 15 }}>settings</span>
+                    Settings
+                  </button>
+                </>
+              )}
+              {activeView === 'companies' && (
+                <button
+                  id="btn-add-company"
+                  style={{
+                    ...btn('primary'),
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    boxShadow: '0 4px 14px rgba(16,185,129,0.35)',
+                  }}
+                  onClick={() => setShowAddCompanyModal(true)}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add_business</span>
+                  Add Company
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1576,6 +1733,13 @@ export default function SuperAdminDashboard() {
         <AddSuperAdminModal
           onClose={() => setShowAddSuperAdminModal(false)}
           onConfirm={handleCreateSuperAdmin}
+          loading={actionLoading}
+        />
+      )}
+      {showAddCompanyModal && (
+        <AddCompanyModal
+          onClose={() => setShowAddCompanyModal(false)}
+          onConfirm={handleAddCompany}
           loading={actionLoading}
         />
       )}

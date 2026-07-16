@@ -14,5 +14,6 @@ export const superAdminApi = {
   
   saveEmployeePrice: (data) => apiClient.patch('/SuperAdmin/config/employee_price_inr', data),
   updateProfile: (data) => apiClient.patch('/SuperAdmin/profile', data),
-  createSuperAdmin: (data) => apiClient.post('/SuperAdmin/create-superadmin', data)
+  createSuperAdmin: (data) => apiClient.post('/SuperAdmin/create-superadmin', data),
+  registerCompany: (data) => apiClient.post('/Auth/register', data)
 };
