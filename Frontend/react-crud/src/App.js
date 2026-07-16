@@ -15,6 +15,9 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const PricingPage = lazy(() => import('./pages/PricingPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const DemoPage = lazy(() => import('./pages/DemoPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const EmployeeDashboard = lazy(() => import('./pages/EmployeeDashboard'));
 const AttendancePage = lazy(() => import('./pages/AttendancePage'));
@@ -105,9 +108,12 @@ export default function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/demo" element={<DemoPage />} />
 
                 {/* SuperAdmin routes */}
-                <Route path="/superadmin" element={
+                <Route path="/superadmin/*" element={
                   <ProtectedRoute allowedRoles={['SuperAdmin']}>
                     <SuperAdminDashboard />
                   </ProtectedRoute>

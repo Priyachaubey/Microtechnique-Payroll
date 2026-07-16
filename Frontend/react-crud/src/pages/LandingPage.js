@@ -9,13 +9,18 @@ import Footer from '../components/landing/Footer';
 import { TESTIMONIALS } from '../components/landing/data';
 import { Star, Quote, ArrowRight, ShieldCheck, Heart, UserCheck, LogOut } from 'lucide-react';
 import { useAuth } from '../AuthContext';
-const screenshotConfig = 'https://via.placeholder.com/800x600';
+const screenshotConfig = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80';
 
 export default function LandingPage() {
+  const [theme, setTheme] = useState('dark');
   const [demoModalOpen, setDemoModalOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('hero');
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  const toggleTheme = () => {
+    setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+  };
 
   const isLoggedIn = !!user;
   const loggedInUser = user;
@@ -61,32 +66,41 @@ export default function LandingPage() {
     }
   };
 
+  const isDark = theme === 'dark';
+
   return (
-    <div id="landing-page-root" className="bg-[#020617] text-slate-100 min-h-screen selection:bg-blue-500/30 selection:text-blue-200">
+    <div id="landing-page-root" className={`transition-colors duration-300 min-h-screen selection:bg-blue-500/30 selection:text-blue-200 ${
+      isDark ? "bg-[#020617] text-slate-100" : "bg-white text-slate-800"
+    }`}>
       
       {/* Structural Glassmorphism Navbar */}
       <Navbar
         onOpenDemo={() => setDemoModalOpen(true)}
         activeSection={activeSection}
         onNavigate={handleNavigate}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Hero Header with login and register triggers */}
       <Hero
         onOpenDemo={() => setDemoModalOpen(true)}
         onNavigate={handleNavigate}
+        theme={theme}
       />
 
       {/* Trust Offerings Selection Grid */}
       <div id="solutions-section">
-        <Services onOpenDemo={() => setDemoModalOpen(true)} />
+        <Services onOpenDemo={() => setDemoModalOpen(true)} theme={theme} />
       </div>
 
       {/* Payroll Presentation & Live savings ROI Simulator */}
-      <PayrollModule />
+      <PayrollModule theme={theme} />
 
       {/* ── Platform Configuration Showcase ─────────────────────────── */}
-      <section className="bg-[#030712] py-20 border-b border-white/5 relative overflow-hidden">
+      <section className={`py-20 border-b relative overflow-hidden transition-colors duration-300 ${
+        isDark ? "bg-[#030712] border-white/5" : "bg-slate-50 border-slate-200"
+      }`}>
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-purple-500/5 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[160px] pointer-events-none" />
 
@@ -96,15 +110,21 @@ export default function LandingPage() {
             {/* Screenshot Left */}
             <div className="relative order-1">
               <div className="absolute -inset-3 bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-600 rounded-3xl blur-3xl opacity-10 pointer-events-none" />
-              <div className="relative glass rounded-2xl shadow-2xl overflow-hidden border border-white/10">
+              <div className={`relative rounded-2xl shadow-2xl overflow-hidden border ${
+                isDark ? "glass border-white/10" : "bg-white border-slate-200"
+              }`}>
                 {/* Browser chrome bar */}
-                <div className="bg-white/[0.02] border-b border-white/10 px-4 py-3 flex items-center gap-3">
+                <div className={`px-4 py-3 flex items-center gap-3 border-b ${
+                  isDark ? "bg-white/[0.02] border-white/10" : "bg-slate-100 border-slate-200"
+                }`}>
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-[#ef4444]" />
                     <div className="w-2.5 h-2.5 rounded-full bg-[#fbbf24]" />
                     <div className="w-2.5 h-2.5 rounded-full bg-[#10b981]" />
                   </div>
-                  <div className="flex-1 bg-slate-950/40 border border-white/5 rounded px-3 py-1 text-[10px] text-slate-400 font-mono text-center truncate">
+                  <div className={`flex-1 border rounded px-3 py-1 text-[10px] font-mono text-center truncate ${
+                    isDark ? "bg-slate-950/40 border-white/5 text-slate-400" : "bg-slate-200 border-slate-300 text-slate-600"
+                  }`}>
                     microtechnique.co/payroll/spaces
                   </div>
                   <div className="w-10 text-right">
@@ -122,10 +142,12 @@ export default function LandingPage() {
                 </div>
               </div>
               {/* Floating badge */}
-              <div className="absolute -bottom-5 -right-3 glass backdrop-blur-xl border border-white/15 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 select-none">
+              <div className={`absolute -bottom-5 -right-3 border px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 select-none ${
+                isDark ? "glass border-white/15" : "bg-white border-slate-250 text-slate-900"
+              }`}>
                 <div className="w-9 h-9 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-base">⚙️</div>
                 <div>
-                  <div className="text-white text-xs font-bold">Live Config Rules</div>
+                  <div className="text-xs font-bold">Live Config Rules</div>
                   <div className="text-slate-500 text-[10px]">Instant salary preview</div>
                 </div>
               </div>
@@ -317,6 +339,23 @@ export default function LandingPage() {
         onNavigate={handleNavigate}
         onOpenDemo={() => setDemoModalOpen(true)}
       />
+
+      {/* Floating WhatsApp Icon */}
+      <a
+        href="https://wa.me/919999999999?text=Hi!%20I'm%20interested%20in%20Microtechnique%20Payroll."
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 bg-[#25D366] text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform duration-300 z-50 flex items-center justify-center cursor-pointer hover:bg-[#20ba5a]"
+        title="Contact us on WhatsApp"
+      >
+        <svg
+          className="w-6 h-6 fill-current"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M17.472 14.382c-.022-.079-.085-.123-.33-.24c-.244-.117-1.436-.708-1.658-.788c-.222-.08-.383-.12-.544.12c-.16.24-.622.788-.762.947c-.14.16-.28.18-.524.062c-.244-.117-.98-.36-1.87-1.156c-.692-.617-1.16-1.38-1.296-1.617c-.136-.237-.015-.365.106-.483c.11-.107.244-.287.366-.43c.123-.142.163-.243.244-.405c.081-.162.04-.304-.02-.422c-.06-.117-.544-1.31-.746-1.795c-.198-.476-.397-.412-.544-.42c-.14-.008-.3-.008-.46-.008c-.16 0-.42.06-.64.3c-.22.24-.84.82-.84 2.008c0 1.187.86 2.33 1.04 2.508c.18.178 1.69 2.586 4.1 3.63c.57.247 1.02.395 1.37.508c.58.184 1.11.158 1.53.095c.47-.07 1.44-.587 1.64-1.156c.2-.569.2-1.056.14-1.156M12 2C6.48 2 2 6.48 2 12c0 2.17.69 4.19 1.86 5.86L2.5 22l4.3-1.3C8.36 21.41 10.13 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.73 0-3.34-.49-4.72-1.33l-.34-.21l-2.49.75l.77-2.42l-.23-.37C4.12 15.08 3.5 13.1 3.5 12c0-4.69 3.81-8.5 8.5-8.5s8.5 3.81 8.5 8.5s-3.81 8.5-8.5 8.5z" />
+        </svg>
+      </a>
     </div>
   );
 }

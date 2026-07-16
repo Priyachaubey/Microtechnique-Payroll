@@ -58,6 +58,9 @@ export default function LoginPage() {
 
         <div className="login-card fade-in" style={{ maxWidth: 480 }}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
+            <div onClick={() => navigate("/")} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, color: "var(--primary-600)", fontWeight: 600, cursor: "pointer", marginBottom: 16, userSelect: "none" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_back</span> Back to Home
+            </div>
             <div style={{ width: 60, height: 60, background: "var(--primary-50)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
               <span className="material-symbols-outlined" style={{ fontSize: 30, color: "var(--primary-600)" }}>login</span>
             </div>

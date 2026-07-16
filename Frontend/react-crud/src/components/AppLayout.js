@@ -44,7 +44,18 @@ const MANAGER_EXTRA_NAV = [
 
 const NAV_ITEMS = {
   superadmin: [
-    { path: '/superadmin', icon: 'admin_panel_settings', label: 'Governance' },
+    { path: '/superadmin/overview', icon: 'dashboard', label: 'Overview' },
+    { path: '/superadmin/actions', icon: 'pending_actions', label: 'Action Center' },
+    { path: '/superadmin/companies', icon: 'business', label: 'Companies' },
+    { path: '/superadmin/approvals', icon: 'how_to_reg', label: 'Admin Approvals' },
+    { path: '/superadmin/contracts', icon: 'handshake', label: 'Plans & Contracts' },
+    { path: '/superadmin/payments', icon: 'account_balance_wallet', label: 'Payments' },
+    { path: '/superadmin/payroll', icon: 'monetization_on', label: 'Payroll Monitor' },
+    { path: '/superadmin/health', icon: 'dns', label: 'System Health' },
+    { path: '/superadmin/support', icon: 'support_agent', label: 'Support' },
+    { path: '/superadmin/security', icon: 'admin_panel_settings', label: 'Security & Audit' },
+    { path: '/superadmin/analytics', icon: 'analytics', label: 'Analytics' },
+    { path: '/superadmin/settings', icon: 'settings', label: 'Global Settings' },
   ],
   admin: [
     { path: '/admin', icon: 'dashboard', label: 'Dashboard' },
@@ -80,7 +91,10 @@ const NAV_ITEMS = {
 
 const BOTTOM_NAV = {
   superadmin: [
-    { path: '/superadmin', icon: 'admin_panel_settings', label: 'Governance' },
+    { path: '/superadmin/overview', icon: 'dashboard', label: 'Overview' },
+    { path: '/superadmin/actions', icon: 'pending_actions', label: 'Actions' },
+    { path: '/superadmin/companies', icon: 'business', label: 'Companies' },
+    { path: '/superadmin/settings', icon: 'settings', label: 'Settings' },
   ],
   admin: [
     { path: '/admin', icon: 'dashboard', label: 'Home' },
@@ -243,7 +257,12 @@ export default function AppLayout({ children, role = 'employee' }) {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (path === '/superadmin/overview' && (location.pathname === '/superadmin' || location.pathname === '/superadmin/')) {
+      return true;
+    }
+    return location.pathname === path;
+  };
 
   return (
     <div className="app-layout">

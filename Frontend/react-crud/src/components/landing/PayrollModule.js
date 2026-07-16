@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import React from 'react';
 import { Sliders, Clock, HelpCircle, ShieldAlert, Sparkles, Monitor, AppWindow } from 'lucide-react';
-const screenshotPortal = 'https://via.placeholder.com/800x600';
 
-export default function PayrollModule() {
+const screenshotPortal = 'https://images.unsplash.com/photo-1543286386-2e6713d07821?w=800&auto=format&fit=crop&q=80';
+
+export default function PayrollModule({ theme }) {
   // Calculator inputs in Indian Rupees (INR)
   const [employeeCount, setEmployeeCount] = useState(120);
   const [manualHours, setManualHours] = useState(4);
@@ -11,18 +12,15 @@ export default function PayrollModule() {
   const [errorRate, setErrorRate] = useState(3.5); // percentage of errors
 
   // Calculating saving formula metrics in INR (₹)
-  // Microtechnique saves 85% of physical payroll processing and dispute overhead.
   const timeSavedHours = Math.round(employeeCount * manualHours * 0.85);
   const adminSavings = timeSavedHours * hourlyRate;
   
-  // Traditional filing/rectification errors cost an average of ₹8,000 to correct and audit manually.
   const traditionalErrorsCount = Math.round(employeeCount * (errorRate / 100));
   const errorSavings = traditionalErrorsCount * 8000; // ₹8,000 correction price
 
   const totalMonthlySavings = adminSavings + errorSavings;
   const totalAnnualSavings = totalMonthlySavings * 12;
 
-  // Manual Costs vs. Responsive Payroll Suite Costs
   const traditionalTotalCost = (employeeCount * manualHours * hourlyRate) + (traditionalErrorsCount * 8000);
   const microtechniqueCost = Math.round(traditionalTotalCost * 0.15); // saves 85%
 
@@ -41,10 +39,14 @@ export default function PayrollModule() {
     },
   ];
 
+  const isDark = theme === 'dark';
+
   return (
     <section
       id="payroll"
-      className="bg-[#020617] py-24 border-b border-white/5 relative overflow-hidden"
+      className={`py-24 border-b transition-colors duration-300 relative overflow-hidden ${
+        isDark ? "bg-[#020617] border-white/5" : "bg-white border-slate-200"
+      }`}
     >
       {/* Radiant Glowing Background */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[140px] pointer-events-none" />
@@ -53,13 +55,13 @@ export default function PayrollModule() {
         
         {/* Section Heading */}
         <div className="text-center max-w-3xl mx-auto mb-20 flex flex-col space-y-4">
-          <span className="text-blue-400 font-mono tracking-widest text-xs uppercase font-semibold">
+          <span className="text-blue-550 font-mono tracking-widest text-xs uppercase font-semibold">
             Simple Employee Solutions
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-display">
+          <h2 className={`text-3xl sm:text-4xl font-extrabold tracking-tight font-display ${isDark ? "text-white" : "text-slate-900"}`}>
             On-Time, Clear & Trusted Payroll
           </h2>
-          <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+          <p className={`text-sm sm:text-base leading-relaxed ${isDark ? "text-slate-400" : "text-slate-600"}`}>
             A stress-free system providing honest attendance tracking, accurate provident fund credits, and instant payslip downloads. Built to gain the complete confidence of your employees.
           </p>
         </div>
@@ -74,25 +76,29 @@ export default function PayrollModule() {
               <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl blur-lg opacity-15 pointer-events-none" />
 
               {/* Tablet Mockup Border Frame */}
-              <div className="relative glass rounded-xl shadow-2xl p-2.5 bg-white/[0.02]">
-                <div className="bg-slate-950 rounded-lg overflow-hidden border border-white/5">
+              <div className={`relative rounded-xl shadow-2xl p-2.5 border ${
+                isDark ? "glass bg-white/[0.02]" : "bg-white border-slate-200"
+              }`}>
+                <div className="bg-slate-955 rounded-lg overflow-hidden border border-white/5">
                   
                   {/* Mockup Top Menu Header */}
-                  <div className="bg-white/[0.02] border-b border-white/5 px-4 py-2 flex items-center justify-between">
-                    <span className="text-slate-400 font-mono text-[9px] tracking-wider uppercase font-semibold">SECURED STAFF PORTAL PAGE</span>
+                  <div className={`px-4 py-2 flex items-center justify-between border-b ${
+                    isDark ? "bg-white/[0.02] border-white/5" : "bg-slate-50 border-slate-200"
+                  }`}>
+                    <span className="text-slate-450 font-mono text-[9px] tracking-wider uppercase font-semibold">SECURED STAFF PORTAL PAGE</span>
                     <div className="flex space-x-1.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-slate-700" />
-                      <div className="w-1.5 h-1.5 rounded-full bg-slate-700" />
-                      <div className="w-1.5 h-1.5 rounded-full bg-slate-700" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                     </div>
                   </div>
 
                   {/* Portal image preview */}
-                  <div className="relative aspect-[16/10] overflow-hidden">
+                  <div className="relative aspect-[16/10] overflow-hidden bg-slate-950">
                     <img
                       src={screenshotPortal}
                       alt="Microtechnique Payroll Employee Dashboard"
-                      className="w-full h-full object-cover object-top hover:scale-101 transition-transform duration-500"
+                      className="w-full h-full object-cover object-top hover:scale-[1.01] transition-transform duration-500"
                     />
                     {/* Fake Clock display */}
                     <div className="absolute bottom-4 left-4 glass bg-slate-900/95 backdrop-blur-xl border border-white/10 px-2.5 py-1.5 rounded-xl text-[9px] font-mono text-blue-400 font-bold select-none flex items-center space-x-1.5">
@@ -106,23 +112,25 @@ export default function PayrollModule() {
           </div>
 
           {/* Texts Right */}
-          <div className="lg:col-span-6 flex flex-col space-y-6 text-left lg:pl-6 text-slate-100">
-            <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight font-display">
+          <div className="lg:col-span-6 flex flex-col space-y-6 text-left lg:pl-6">
+            <h3 className={`text-2xl sm:text-3xl font-bold tracking-tight font-display ${isDark ? "text-white" : "text-slate-900"}`}>
               Empowering Employees with Self-Service
             </h3>
-            <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+            <p className={`text-sm sm:text-base leading-relaxed ${isDark ? "text-slate-400" : "text-slate-600"}`}>
               Your staff can easily clock-in, check recorded working logs, submit simple leave requests, and see exact salary calculations in real-time. No hidden deductions, no guesswork. Every metric is clear and verifiable.
             </p>
 
             <div className="space-y-4 pt-2">
               {activePoints.map((pt, i) => (
                 <div key={i} className="flex space-x-3 items-start">
-                  <div className="w-8 h-8 rounded-lg glass bg-white/[0.03] border-white/10 text-blue-400 flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0 font-mono">
+                  <div className={`w-8 h-8 rounded-lg border text-blue-550 flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0 font-mono ${
+                    isDark ? "glass bg-white/[0.03] border-white/10" : "bg-blue-50 border-blue-200"
+                  }`}>
                     0{i + 1}
                   </div>
                   <div className="flex flex-col text-left">
-                    <span className="text-white font-semibold text-sm">{pt.title}</span>
-                    <span className="text-slate-400 text-xs mt-0.5">{pt.desc}</span>
+                    <span className={`font-semibold text-sm ${isDark ? "text-white" : "text-slate-900"}`}>{pt.title}</span>
+                    <span className="text-slate-500 text-xs mt-0.5">{pt.desc}</span>
                   </div>
                 </div>
               ))}
@@ -131,9 +139,13 @@ export default function PayrollModule() {
         </div>
 
         {/* Content Segment 2: Interactive ROI and Savings Simulator */}
-        <div id="roi" className="glass bg-white/[0.02] border-white/10 rounded-2xl p-6 sm:p-10 relative">
-          <div className="absolute top-4 right-4 glass bg-blue-500/10 border-blue-500/20 rounded-full px-3 py-1 text-[9px] font-mono text-blue-400 uppercase tracking-widest flex items-center space-x-1 font-semibold select-none">
-            <Sparkles className="w-3 h-3 animate-spin-slow text-blue-400 mr-0.5" />
+        <div id="roi" className={`border rounded-2xl p-6 sm:p-10 relative transition-colors duration-300 ${
+          isDark ? "glass bg-white/[0.02] border-white/10" : "bg-white border-slate-200 shadow-xl"
+        }`}>
+          <div className={`absolute top-4 right-4 border rounded-full px-3 py-1 text-[9px] font-mono uppercase tracking-widest flex items-center space-x-1 font-semibold select-none ${
+            isDark ? "glass bg-blue-500/10 border-blue-500/20 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-600"
+          }`}>
+            <Sparkles className="w-3 h-3 animate-spin-slow text-blue-500 mr-0.5" />
             <span>Simulate Monthly Savings</span>
           </div>
 
@@ -142,20 +154,20 @@ export default function PayrollModule() {
             {/* Left: Input Variables Sliders */}
             <div className="lg:col-span-7 flex flex-col justify-between">
               <div>
-                <h3 className="text-xl sm:text-2xl font-bold text-white text-left tracking-tight mb-2 font-display">
+                <h3 className={`text-xl sm:text-2xl font-bold text-left tracking-tight mb-2 font-display ${isDark ? "text-white" : "text-slate-900"}`}>
                   Estimate HR Time & Cost Savings
                 </h3>
-                <p className="text-slate-400 text-xs text-left mb-8 leading-relaxed">
+                <p className="text-slate-500 text-xs text-left mb-8 leading-relaxed">
                   Understand how automating data collation avoids manual payroll mistakes, eliminates human errors, and preserves monthly correction budgets.
                 </p>
 
                 {/* Variable Slider 1: Employee Count */}
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-white text-xs font-bold font-display uppercase tracking-wider flex items-center">
+                    <label className={`text-xs font-bold font-display uppercase tracking-wider flex items-center ${isDark ? "text-white" : "text-slate-700"}`}>
                       Staff Size (FTEs)
                     </label>
-                    <span className="text-blue-400 font-mono font-bold text-sm glass bg-white/[0.04] border-white/5 px-2.5 py-0.5 rounded">
+                    <span className="text-blue-550 font-mono font-bold text-sm border px-2.5 py-0.5 rounded">
                       {employeeCount} Employees
                     </span>
                   </div>
@@ -166,7 +178,7 @@ export default function PayrollModule() {
                     step="5"
                     value={employeeCount}
                     onChange={(e) => setEmployeeCount(Number(e.target.value))}
-                    className="w-full accent-blue-500 h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer"
+                    className="w-full accent-blue-500 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                   />
                   <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
                     <span>5</span>
@@ -178,10 +190,10 @@ export default function PayrollModule() {
                 {/* Variable Slider 2: Admin Hours per Employee */}
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-white text-xs font-bold font-display uppercase tracking-wider">
+                    <label className={`text-xs font-bold font-display uppercase tracking-wider ${isDark ? "text-white" : "text-slate-700"}`}>
                       Manual Admin-checking / employee / mo
                     </label>
-                    <span className="text-blue-400 font-mono font-bold text-sm glass bg-white/[0.04] border-white/5 px-2.5 py-0.5 rounded">
+                    <span className="text-blue-550 font-mono font-bold text-sm border px-2.5 py-0.5 rounded">
                       {manualHours} Hours / Month
                     </span>
                   </div>
@@ -192,7 +204,7 @@ export default function PayrollModule() {
                     step="1"
                     value={manualHours}
                     onChange={(e) => setManualHours(Number(e.target.value))}
-                    className="w-full accent-blue-500 h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer"
+                    className="w-full accent-blue-500 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                   />
                   <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
                     <span>1h</span>
@@ -204,10 +216,10 @@ export default function PayrollModule() {
                 {/* Variable Slider 3: Hourly Employer Rate */}
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-white text-xs font-bold font-display uppercase tracking-wider">
+                    <label className={`text-xs font-bold font-display uppercase tracking-wider ${isDark ? "text-white" : "text-slate-700"}`}>
                       Fully Loaded Account hourly HR rate (₹ estimate)
                     </label>
-                    <span className="text-blue-400 font-mono font-bold text-sm glass bg-white/[0.04] border-white/5 px-2.5 py-0.5 rounded">
+                    <span className="text-blue-555 font-mono font-bold text-sm border px-2.5 py-0.5 rounded">
                       ₹{hourlyRate} / Hour
                     </span>
                   </div>
@@ -218,7 +230,7 @@ export default function PayrollModule() {
                     step="50"
                     value={hourlyRate}
                     onChange={(e) => setHourlyRate(Number(e.target.value))}
-                    className="w-full accent-blue-500 h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer"
+                    className="w-full accent-blue-500 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                   />
                   <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
                     <span>₹100</span>
@@ -230,10 +242,10 @@ export default function PayrollModule() {
                 {/* Variable Slider 4: Error Rate */}
                 <div className="mb-4">
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-white text-xs font-bold font-display uppercase tracking-wider flex items-center">
+                    <label className={`text-xs font-bold font-display uppercase tracking-wider flex items-center ${isDark ? "text-white" : "text-slate-700"}`}>
                       Manual error correction rate & penalty risk
                     </label>
-                    <span className="text-blue-400 font-mono font-bold text-sm glass bg-white/[0.04] border-white/5 px-2.5 py-0.5 rounded">
+                    <span className="text-blue-555 font-mono font-bold text-sm border px-2.5 py-0.5 rounded">
                       {errorRate}% average disputes
                     </span>
                   </div>
@@ -244,7 +256,7 @@ export default function PayrollModule() {
                     step="0.5"
                     value={errorRate}
                     onChange={(e) => setErrorRate(Number(e.target.value))}
-                    className="w-full accent-blue-500 h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer"
+                    className="w-full accent-blue-500 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                   />
                   <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
                     <span>0.5%</span>
@@ -255,63 +267,71 @@ export default function PayrollModule() {
               </div>
 
               {/* System Note */}
-              <div className="glass bg-white/[0.01] border-white/5 rounded-xl p-4 flex items-start space-x-2.5 mt-6">
-                <Sliders className="w-4.5 h-4.5 text-blue-400 mt-0.5 flex-shrink-0" />
-                <p className="text-[11px] text-slate-450 text-left leading-normal">
+              <div className={`border rounded-xl p-4 flex items-start space-x-2.5 mt-6 ${
+                isDark ? "glass bg-white/[0.01] border-white/5" : "bg-slate-50 border-slate-200"
+              }`}>
+                <Sliders className="w-4.5 h-4.5 text-blue-500 mt-0.5 flex-shrink-0" />
+                <p className="text-[11px] text-slate-500 text-left leading-normal">
                   *Savings estimates represent average time saved during roster-collation, direct tax preparation, and manual dispute processing. Calibrated to normal Indian business operational rates.
                 </p>
               </div>
             </div>
 
             {/* Right: Output Savings Board */}
-            <div className="lg:col-span-5 glass bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 sm:p-8 rounded-xl flex flex-col justify-between shadow-2xl relative">
+            <div className={`border p-6 sm:p-8 rounded-xl flex flex-col justify-between shadow-2xl relative ${
+              isDark ? "glass bg-white/[0.03] border-white/10" : "bg-slate-50 border-slate-200"
+            }`}>
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
 
               <div className="space-y-6">
                 <div className="text-left">
-                  <span className="text-slate-400 text-[10px] tracking-widest font-mono uppercase block">Estimated Preservation</span>
-                  <span className="text-4xl sm:text-5xl font-extrabold text-white tracking-tight block mt-2">
+                  <span className="text-slate-500 text-[10px] tracking-widest font-mono uppercase block">Estimated Preservation</span>
+                  <span className={`text-4xl sm:text-5xl font-extrabold tracking-tight block mt-2 ${isDark ? "text-white" : "text-slate-900"}`}>
                     ₹{totalMonthlySavings.toLocaleString('en-IN')}
-                    <span className="text-sm font-normal text-slate-400"> / Mo</span>
+                    <span className="text-sm font-normal text-slate-500"> / Mo</span>
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 font-sans">
-                  <div className="glass bg-white/[0.02] border-white/5 p-4 rounded-xl text-left font-sans">
-                    <span className="text-slate-450 text-[9px] tracking-wider uppercase font-semibold block font-sans">Annual Resource Value</span>
-                    <span className="text-lg sm:text-xl font-bold text-blue-400 block mt-1">₹{totalAnnualSavings.toLocaleString('en-IN')}</span>
-                    <span className="text-[10px] text-slate-500 block mt-0.5">Retained funds</span>
+                  <div className={`border p-4 rounded-xl text-left font-sans ${
+                    isDark ? "glass bg-white/[0.02] border-white/5" : "bg-white border-slate-200"
+                  }`}>
+                    <span className="text-slate-500 text-[9px] tracking-wider uppercase font-semibold block font-sans">Annual Resource Value</span>
+                    <span className="text-lg sm:text-xl font-bold text-blue-550 block mt-1">₹{totalAnnualSavings.toLocaleString('en-IN')}</span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Retained funds</span>
                   </div>
 
-                  <div className="glass bg-white/[0.02] border-white/5 p-4 rounded-xl text-left font-sans">
-                    <span className="text-slate-450 text-[9px] tracking-wider uppercase font-semibold block">Admin labor allocation</span>
-                    <span className="text-lg sm:text-xl font-bold text-blue-400 block mt-1">{timeSavedHours} Hours</span>
-                    <span className="text-[10px] text-slate-500 block mt-0.5">Saved / month</span>
+                  <div className={`border p-4 rounded-xl text-left font-sans ${
+                    isDark ? "glass bg-white/[0.02] border-white/5" : "bg-white border-slate-200"
+                  }`}>
+                    <span className="text-slate-500 text-[9px] tracking-wider uppercase font-semibold block">Admin labor allocation</span>
+                    <span className="text-lg sm:text-xl font-bold text-blue-555 block mt-1">{timeSavedHours} Hours</span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Saved / month</span>
                   </div>
                 </div>
 
                 {/* Animated Comparison Bars */}
-                <div className="border-t border-white/5 pt-5 text-left">
-                  <span className="text-white text-xs font-bold uppercase tracking-wider block mb-3">Estimated Overhead comparison:</span>
+                <div className={`border-t pt-5 text-left ${isDark ? "border-white/5" : "border-slate-200"}`}>
+                  <span className={`text-xs font-bold uppercase tracking-wider block mb-3 ${isDark ? "text-white" : "text-slate-900"}`}>Estimated Overhead comparison:</span>
                   <div className="space-y-4">
                     {/* Manual costs */}
                     <div className="space-y-1.5">
-                      <div className="flex justify-between text-xs text-slate-450">
+                      <div className="flex justify-between text-xs text-slate-500">
                         <span>Traditional Manual Costs</span>
                         <span className="font-mono font-semibold">₹{traditionalTotalCost.toLocaleString('en-IN')}</span>
                       </div>
-                      <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
-                        <div className="bg-slate-700 h-full rounded-full w-full" />
+                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                        <div className="bg-slate-400 h-full rounded-full w-full" />
                       </div>
                     </div>
 
                     {/* Microtechnique Suite Costs */}
                     <div className="space-y-1.5">
-                      <div className="flex justify-between text-xs font-semibold text-blue-400">
+                      <div className="flex justify-between text-xs font-semibold text-blue-555">
                         <span>Transparent Microtechnique Automated</span>
                         <span className="font-mono font-bold">₹{microtechniqueCost.toLocaleString('en-IN')}</span>
                       </div>
-                      <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden relative border border-blue-500/20">
+                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden relative border border-blue-500/20">
                         <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full transition-all duration-300" style={{ width: '15%' }} />
                       </div>
                     </div>
@@ -319,17 +339,15 @@ export default function PayrollModule() {
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-white/5 mt-6 text-left">
-                <span className="text-[11px] text-slate-400 flex items-center">
+              <div className={`pt-6 border-t mt-6 text-left ${isDark ? "border-white/5" : "border-slate-200"}`}>
+                <span className="text-[11px] text-slate-500 flex items-center">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-2 animate-pulse" />
-                  Employee trust ranking evaluated at <strong className="text-blue-400 ml-1">99.4% approval</strong>
+                  Employee trust ranking evaluated at <strong className="text-blue-550 ml-1">99.4% approval</strong>
                 </span>
               </div>
             </div>
-
           </div>
         </div>
-
       </div>
     </section>
   );
