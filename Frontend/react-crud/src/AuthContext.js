@@ -116,6 +116,7 @@ export function AuthProvider({ children }) {
   const redirect = useCallback((role) => {
     if (role === 'SuperAdmin') navigate('/superadmin');
     else if (role === 'Admin') navigate('/admin');
+    else if (role === 'HR') navigate('/hr');
     else navigate('/employee'); // TeamLead, Manager, Employee all use /employee
   }, [navigate]);
 

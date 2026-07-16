@@ -41,6 +41,7 @@ const RecruitmentPage = lazy(() => import('./pages/RecruitmentPage'));
 const AssetsPage = lazy(() => import('./pages/AssetsPage'));
 const SupportPage = lazy(() => import('./pages/SupportPage'));
 const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
+const HRDashboard = lazy(() => import('./pages/HRDashboard'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -112,6 +113,13 @@ export default function App() {
                   </ProtectedRoute>
                 } />
 
+                {/* HR routes */}
+                <Route path="/hr" element={
+                  <ProtectedRoute allowedRoles={['HR', 'Admin']}>
+                    <HRDashboard />
+                  </ProtectedRoute>
+                } />
+
                 {/* Admin-only routes */}
                 <Route path="/admin" element={
                   <ProtectedRoute allowedRoles={['Admin']}>
@@ -129,12 +137,12 @@ export default function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/compliance" element={
-                  <ProtectedRoute allowedRoles={['Admin']}>
+                  <ProtectedRoute allowedRoles={['Admin', 'HR']}>
                     <ComplianceDashboard />
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/settings/compliance" element={
-                  <ProtectedRoute allowedRoles={['Admin']}>
+                  <ProtectedRoute allowedRoles={['Admin', 'HR']}>
                     <ComplianceSettings />
                   </ProtectedRoute>
                 } />
@@ -144,7 +152,7 @@ export default function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/recruitment" element={
-                  <ProtectedRoute allowedRoles={['Admin']}>
+                  <ProtectedRoute allowedRoles={['Admin', 'HR']}>
                     <RecruitmentPage />
                   </ProtectedRoute>
                 } />
@@ -169,7 +177,7 @@ export default function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/attendance" element={
-                  <ProtectedRoute allowedRoles={['Admin', 'TeamLead', 'Manager']}>
+                  <ProtectedRoute allowedRoles={['Admin', 'TeamLead', 'Manager', 'HR']}>
                     <AttendancePage isAdmin={true} />
                   </ProtectedRoute>
                 } />
@@ -189,7 +197,7 @@ export default function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/admin/leaves" element={
-                  <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TeamLead']}>
+                  <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TeamLead', 'HR']}>
                     <LeavePage isAdmin={true} />
                   </ProtectedRoute>
                 } />

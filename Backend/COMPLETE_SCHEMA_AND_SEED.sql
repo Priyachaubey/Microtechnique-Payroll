@@ -410,6 +410,23 @@ ON CONFLICT (email) DO UPDATE SET
 
 UPDATE t_spaces SET adminid = 1 WHERE spaceid = 1;
 
+-- Default HR (same space as the Admin above)
+-- Email:    hr@microtechnique.local
+-- Password: Employee@12345
+INSERT INTO t_users (
+    empid, spaceid, name, email, passwordhash, gender, status, role,
+    dateofjoining, is_approved, statusbysuperadmin
+)
+VALUES (
+    4, 1, 'Default HR', 'hr@microtechnique.local',
+    'AQAAAAEAACcQAAAAELmU/490ge6J0ZHn5oiwTBrzsdOot+s/GDwhjcCcKmFraB08mR1gsjbknKqSegB4DA==',
+    'Unknown', 'Active', 'HR', CURRENT_DATE, TRUE, FALSE
+)
+ON CONFLICT (email) DO UPDATE SET
+    passwordhash = EXCLUDED.passwordhash,
+    role = 'HR',
+    status = 'Active';
+
 -- Default Employee (same space as the Admin above)
 -- Email:    employee@microtechnique.local
 -- Password: Employee@12345
