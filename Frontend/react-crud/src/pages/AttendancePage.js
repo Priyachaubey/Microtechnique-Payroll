@@ -4,6 +4,9 @@ import { useAuth } from '../AuthContext';
 import { attendanceApi } from '../api/attendance';
 import { usersApi } from '../api/index';
 import { worklogsApi } from '../api/worklogs';
+import { profileApi } from '../api/profile';
+import { BACKEND_ORIGIN } from '../config';
+import * as faceapi from 'face-api.js';
 import { CalendarSkeleton } from '../components/Skeletons';
 import toast from 'react-hot-toast';
 
@@ -50,6 +53,25 @@ const inputStyle = {
 export default function AttendancePage({ isAdmin }) {
   const { user } = useAuth();
   // Shared state
+  const [fingerprintSupport, setFingerprintSupport] = useState(true);
+
+  // Load face-api models on component mount
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        await Promise.all([
+          faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
+          faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+          faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+        ]);
+        console.log('Face API models loaded');
+      } catch (e) {
+        console.error('Failed to load face-api models', e);
+      }
+    };
+    loadModels();
+  }, []);
+
   const [loading, setLoading] = useState(true);
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState({ month: today.getMonth(), year: today.getFullYear() });
@@ -369,35 +391,80 @@ export default function AttendancePage({ isAdmin }) {
     setIsVerifyingFace(true);
     setShowFaceVerification(true);
     try {
+      // 1. Fetch user's profile photo
+      const profileRes = await profileApi.getMyProfile();
+      const profilePhoto = profileRes.data.profilePhotoUrl || profileRes.data.profilephotourl;
+      if (!profilePhoto) {
+        throw new Error('No profile photo found. Please upload a photo in your Profile settings first.');
+      }
+      
+      const referenceImageUrl = profileApi.getFileUrl(profilePhoto);
+      const referenceImage = await faceapi.fetchImage(referenceImageUrl);
+      const referenceDetection = await faceapi.detectSingleFace(referenceImage).withFaceLandmarks().withFaceDescriptor();
+      
+      if (!referenceDetection) {
+        throw new Error('Could not detect a face in your profile photo. Please upload a clearer photo.');
+      }
+      
+      const faceMatcher = new faceapi.FaceMatcher(referenceDetection.descriptor, 0.6);
+
+      // 2. Start Webcam
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
       setVideoStream(stream);
       const videoEl = document.getElementById('face-verification-video');
       if (videoEl) videoEl.srcObject = stream;
 
-      // Simulate client-side light open-source AI face mapping comparison in browser
-      setTimeout(async () => {
+      // 3. Scan webcam until a match is found or timeout
+      let matchFound = false;
+      let scanAttempts = 0;
+      
+      const scanInterval = setInterval(async () => {
+        if (!videoEl || !videoEl.videoWidth) return;
+        scanAttempts++;
+        
         try {
-          // Compare webcam face descriptor match locally
+          const detection = await faceapi.detectSingleFace(videoEl).withFaceLandmarks().withFaceDescriptor();
+          if (detection) {
+            const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+            if (bestMatch.label === 'person 1' || bestMatch.label === 'unknown') {
+               // 'person 1' is the default label when creating FaceMatcher with a single descriptor array
+               // distance < 0.6 is considered a match
+               if (bestMatch.distance < 0.6) {
+                 matchFound = true;
+               }
+            }
+          }
+        } catch (e) {
+          console.warn('Face detection error during scan', e);
+        }
+
+        if (matchFound || scanAttempts > 15) {
+          clearInterval(scanInterval);
           stream.getTracks().forEach(track => track.stop());
           setVideoStream(null);
           setIsVerifyingFace(false);
           setShowFaceVerification(false);
           
-          // Call Clock In API with Face mode
-          await attendanceApi.clockIn({ verificationMode: 'Face' });
-          window.dispatchEvent(new Event('clock-in-event'));
-          toast.success('Clocked in successfully with Face Verification!');
-          fetchData();
-        } catch (e) {
-          setFaceVerificationError('Face does not match registered profile. Access Denied.');
-          setIsVerifyingFace(false);
+          if (matchFound) {
+            await attendanceApi.clockIn({ verificationMode: 'Face' });
+            window.dispatchEvent(new Event('clock-in-event'));
+            toast.success('Clocked in successfully with AI Face Verification!');
+            fetchData();
+          } else {
+            setFaceVerificationError('Face does not match registered profile. Access Denied.');
+            toast.error('Face Verification Failed.');
+          }
         }
-      }, 2500);
+      }, 500); // Check every 500ms
 
     } catch (err) {
       console.error(err);
-      setFaceVerificationError('Camera access denied. Please allow camera to proceed.');
+      setFaceVerificationError(err.message || 'Camera access denied or verification error.');
       setIsVerifyingFace(false);
+      if (videoStream) {
+         videoStream.getTracks().forEach(track => track.stop());
+         setVideoStream(null);
+      }
     }
   };
 
