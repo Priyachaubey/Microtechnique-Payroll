@@ -1261,7 +1261,6 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<Backend.Hubs.NotificationHub>("/hub/notifications").RequireCors("AllowFrontend");
 app.MapHub<Backend.Hubs.ScreenShareHub>("/hub/screenshare").RequireCors("AllowFrontend");
-app.MapHub<Backend.Hubs.ScreenShareHub>("/hub/screenshare");
 
 app.MapFallbackToFile("index.html");
 app.Run();
