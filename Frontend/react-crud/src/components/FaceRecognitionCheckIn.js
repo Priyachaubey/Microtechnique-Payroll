@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { attendanceApi } from '../api/attendance';
+import { profileApi } from '../api/profile';
+import * as faceapi from 'face-api.js';
 
 export default function FaceRecognitionCheckIn({ isOpen, onClose, onSuccess }) {
   const videoRef = useRef(null);
@@ -27,11 +29,9 @@ export default function FaceRecognitionCheckIn({ isOpen, onClose, onSuccess }) {
         videoRef.current.srcObject = mediaStream;
       }
       
-      // Simulate model loading
-      setTimeout(() => {
-        setStatus('scanning');
-        simulateScanning();
-      }, 1500);
+      setStatus('scanning');
+      setScanProgress(10);
+      runRealFaceScan(mediaStream);
 
     } catch (err) {
       toast.error('Camera access denied or unavailable.');
@@ -45,19 +45,69 @@ export default function FaceRecognitionCheckIn({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  const simulateScanning = () => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 5;
-      setScanProgress(progress);
-      
-      if (progress >= 100) {
-        clearInterval(interval);
-        // Simulate a successful match
-        setStatus('match');
-        handlePunch();
+  const runRealFaceScan = async (mediaStream) => {
+    try {
+      // 1. Fetch user profile photo
+      setScanProgress(20);
+      const profileRes = await profileApi.getMyProfile();
+      const profilePhoto = profileRes.data.profilePhotoUrl || profileRes.data.profilephotourl;
+      if (!profilePhoto) {
+        throw new Error('No profile photo found. Please upload a photo in your Profile settings first.');
       }
-    }, 150);
+      
+      setScanProgress(40);
+      const referenceImageUrl = profileApi.getFileUrl(profilePhoto);
+      const referenceImage = await faceapi.fetchImage(referenceImageUrl);
+      const referenceDetection = await faceapi.detectSingleFace(referenceImage).withFaceLandmarks().withFaceDescriptor();
+      
+      if (!referenceDetection) {
+        throw new Error('Could not detect a face in your profile photo. Please upload a clearer photo.');
+      }
+      
+      setScanProgress(60);
+      const faceMatcher = new faceapi.FaceMatcher(referenceDetection.descriptor, 0.6);
+
+      // 2. Scan webcam
+      let matchFound = false;
+      let scanAttempts = 0;
+      
+      const scanInterval = setInterval(async () => {
+        if (!videoRef.current || !videoRef.current.videoWidth) return;
+        scanAttempts++;
+        
+        try {
+          const detection = await faceapi.detectSingleFace(videoRef.current).withFaceLandmarks().withFaceDescriptor();
+          if (detection) {
+            const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+            if (bestMatch.distance < 0.6) {
+               matchFound = true;
+            }
+          }
+        } catch (e) {
+          console.warn('Face detection error during scan', e);
+        }
+
+        if (matchFound || scanAttempts > 20) {
+          clearInterval(scanInterval);
+          setScanProgress(100);
+          
+          if (matchFound) {
+            setStatus('match');
+            handlePunch();
+          } else {
+            toast.error('Face Verification Failed. Face does not match registered profile.');
+            setStatus('fail');
+            setTimeout(onClose, 2500);
+          }
+        }
+      }, 500);
+
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Face Verification Failed.');
+      setStatus('fail');
+      setTimeout(onClose, 2500);
+    }
   };
 
   const handlePunch = async () => {
