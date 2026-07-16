@@ -459,6 +459,7 @@ public class SuperAdminController : ControllerBase
             return StatusCode(500, new { message = "Failed to update pricing config." });
         }
     }
+}
 
     // Request model for pricing config
     public class PricingConfigRequest
