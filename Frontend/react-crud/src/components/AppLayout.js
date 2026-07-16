@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { profileApi } from '../api/profile';
 import logoMicrotechnique from '../logo.png';
 import NotificationBell from './NotificationBell';
 import toast from 'react-hot-toast';
@@ -137,7 +139,35 @@ export default function AppLayout({ children, role = 'employee' }) {
   const profileRef = useRef(null);
   const dotsRef = useRef(null);
 
+  // Fetch profile to display avatar photo
+  const { data: avatarImageUrl } = useQuery({
+    queryKey: ['myProfileAvatar'],
+    queryFn: async () => {
+      const res = await profileApi.getMyProfile();
+      const photoUrl = res.data?.profilePhotoUrl || res.data?.profilephotourl;
+      if (!photoUrl) return null;
 
+      const fullUrl = profileApi.getFileUrl(photoUrl);
+      const token = localStorage.getItem('token');
+      const imgRes = await fetch(fullUrl, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!imgRes.ok) return null;
+      
+      const blob = await imgRes.blob();
+      return URL.createObjectURL(blob);
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: !!user,
+  });
+
+  const renderAvatarContent = () => {
+    if (avatarImageUrl) {
+      return <img src={avatarImageUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />;
+    }
+    return initials(user?.name || 'U');
+  };
 
   const handleSearchSubmit = () => {
     const q = searchQuery.toLowerCase().trim();
@@ -406,8 +436,8 @@ export default function AppLayout({ children, role = 'employee' }) {
                 aria-expanded={profileOpen}
                 aria-label="Open profile menu"
               >
-                <div className="avatar" style={{ width: 32, height: 32, fontSize: 12, background: '#4F46E5', color: '#fff' }}>
-                  {initials(user?.name || 'U')}
+                <div className="avatar" style={{ width: 32, height: 32, fontSize: 12, background: '#4F46E5', color: '#fff', padding: avatarImageUrl ? 0 : undefined, overflow: 'hidden' }}>
+                  {renderAvatarContent()}
                 </div>
                 <span style={{ fontWeight: 600, fontSize: 13, color: '#111827' }} className="profile-name">
                   {user?.name?.split(' ')[0] || 'User'}
@@ -418,8 +448,8 @@ export default function AppLayout({ children, role = 'employee' }) {
               {profileOpen && (
                 <div className="profile-dropdown" role="menu" aria-label="Profile options">
                   <div className="profile-dropdown-header">
-                    <div className="avatar" style={{ width: 40, height: 40, fontSize: 14, background: '#4F46E5', color: '#fff' }}>
-                      {initials(user?.name || 'U')}
+                    <div className="avatar" style={{ width: 40, height: 40, fontSize: 14, background: '#4F46E5', color: '#fff', padding: avatarImageUrl ? 0 : undefined, overflow: 'hidden' }}>
+                      {renderAvatarContent()}
                     </div>
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 13 }}>{user?.name}</div>
