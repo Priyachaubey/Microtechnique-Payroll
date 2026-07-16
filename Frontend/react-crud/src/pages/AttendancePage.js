@@ -60,10 +60,11 @@ export default function AttendancePage({ isAdmin }) {
   useEffect(() => {
     const loadModels = async () => {
       try {
-        // Load sequentially to prevent internal face-api.js buffer collision
-        await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
-        await faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models');
-        await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+        // Load from CDN to avoid local file corruption issues
+        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
         console.log('Face API models loaded');
       } catch (e) {
         console.error('Failed to load face-api models', e);
