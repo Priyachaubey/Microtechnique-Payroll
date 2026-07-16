@@ -728,19 +728,17 @@ export default function ProfilePage() {
                       <span className="material-symbols-outlined" style={{ fontSize: 16 }}>upload</span>
                       Choose Photo
                     </button>
-                    {photoFile && (
-                      <button
-                        className="btn btn-primary"
-                        type="button"
-                        onClick={handleUploadPhoto}
-                        disabled={uploadingPhoto}
-                      >
-                        {uploadingPhoto
-                          ? <><div className="spinner" />Uploading...</>
-                          : <><span className="material-symbols-outlined" style={{ fontSize: 16 }}>cloud_upload</span>Upload Photo</>
-                        }
-                      </button>
-                    )}
+                    <button
+                      className="btn btn-primary"
+                      type="button"
+                      onClick={handleUploadPhoto}
+                      disabled={uploadingPhoto || !photoFile}
+                    >
+                      {uploadingPhoto
+                        ? <><div className="spinner" />Saving...</>
+                        : <><span className="material-symbols-outlined" style={{ fontSize: 16 }}>save</span>Save Photo</>
+                      }
+                    </button>
                   </div>
                 )}
 
