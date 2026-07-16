@@ -21,6 +21,7 @@ public class AuthController : ControllerBase
     private readonly Backend.Repositories.ISuperAdminRepository _superAdminRepository;
     private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _cache;
     private readonly Resend.IResend _resend;
+    private readonly System.Data.IDbConnection _dbConnection;
 
     public AuthController(
         IUserRepository userRepository,
@@ -28,7 +29,8 @@ public class AuthController : ControllerBase
         Backend.Services.INotificationService notificationService,
         Backend.Repositories.ISuperAdminRepository superAdminRepository,
         Microsoft.Extensions.Caching.Memory.IMemoryCache cache,
-        Resend.IResend resend)
+        Resend.IResend resend,
+        System.Data.IDbConnection dbConnection)
     {
         _userRepository = userRepository;
         _configuration = configuration;
@@ -36,6 +38,7 @@ public class AuthController : ControllerBase
         _superAdminRepository = superAdminRepository;
         _cache = cache;
         _resend = resend;
+        _dbConnection = dbConnection;
     }
 
     [HttpPost("login")]
@@ -347,7 +350,7 @@ public class AuthController : ControllerBase
                 if (!isSuperAdmin && user != null && user.SpaceId.HasValue)
                 {
                     var spaceQuery = "SELECT smtp_host, smtp_port, smtp_username, smtp_password, smtp_from_email FROM t_spaces WHERE spaceid = @SpaceId";
-                    var spaceSmtp = await _userRepository.GetConnection().QueryFirstOrDefaultAsync<dynamic>(spaceQuery, new { SpaceId = user.SpaceId });
+                    var spaceSmtp = await Dapper.SqlMapper.QueryFirstOrDefaultAsync<dynamic>(_dbConnection, spaceQuery, new { SpaceId = user.SpaceId });
 
                     if (spaceSmtp != null && !string.IsNullOrEmpty(spaceSmtp.smtp_host) && !string.IsNullOrEmpty(spaceSmtp.smtp_from_email))
                     {
