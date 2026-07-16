@@ -473,8 +473,8 @@ export default function AttendancePage({ isAdmin }) {
       }, 500); // Check every 500ms
 
     } catch (err) {
-      console.error(err);
-      setFaceVerificationError(err.message || 'Camera access denied or verification error.');
+      console.error('Face verification init error:', err);
+      setFaceVerificationError(`Camera/Model Error: ${err.name || 'Unknown'} - ${err.message || 'Cannot access camera. Ensure you are on HTTPS and have a webcam.'}`);
       setIsVerifyingFace(false);
       if (videoStream) {
          videoStream.getTracks().forEach(track => track.stop());

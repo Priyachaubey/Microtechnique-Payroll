@@ -42,7 +42,8 @@ export default function FaceRecognitionCheckIn({ isOpen, onClose, onSuccess }) {
       runRealFaceScan(mediaStream);
 
     } catch (err) {
-      toast.error('Camera access denied or unavailable.');
+      toast.error(`Camera error: ${err.name || 'Unknown'} - ${err.message || 'Cannot access camera. Ensure you are on HTTPS and have a webcam.'}`);
+      console.error('Camera/Model initialization failed:', err);
       onClose();
     }
   };
