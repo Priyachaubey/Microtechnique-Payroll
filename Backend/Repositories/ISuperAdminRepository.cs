@@ -86,6 +86,7 @@ public interface ISuperAdminRepository
     Task<bool> RevokeAdminAsync(int empId, string status, string reason);
     Task<bool> UpdateAdminStatusAsync(int empId, string status, string? reason);
     Task<bool> ToggleStatusBySuperAdminAsync(int empId, bool status);
+    Task<bool> DeleteAdminAsync(int empId);
     Task<bool> UpdateSpaceLimitsAsync(int spaceId, int? numberOfEmployees, int? maxSpaces);
     Task<PlatformStats> GetPlatformStatsAsync();
     Task<SuperAdmin?> GetSuperAdminByEmailAsync(string email);

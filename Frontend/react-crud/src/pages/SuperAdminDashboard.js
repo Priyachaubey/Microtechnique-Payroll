@@ -951,7 +951,21 @@ export default function SuperAdminDashboard() {
       setActionLoading(false);
     }
   };
-
+  const handleDeleteAdmin = async (admin) => {
+    if (!window.confirm(`Are you sure you want to permanently delete company ${admin.spaceName || 'N/A'} and all its users? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      setActionLoading(true);
+      await superAdminApi.deleteAdmin(admin.empId);
+      toast.success(`${admin.spaceName || 'Company'} deleted successfully.`);
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Delete failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
 
   const handleLimits = async (maxEmp, maxSp) => {
@@ -1421,6 +1435,9 @@ export default function SuperAdminDashboard() {
                                   )}
                                   <button style={btn('ghost', 'sm')} onClick={() => setStatusModal({ admin, mode: 'status' })}>
                                     Change Status
+                                  </button>
+                                  <button style={{ ...btn('danger', 'sm'), background: 'transparent', color: C.danger, border: `1px solid ${C.danger}` }} onClick={() => handleDeleteAdmin(admin)}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 14 }}>delete</span> Delete
                                   </button>
                                 </div>
                               </div>

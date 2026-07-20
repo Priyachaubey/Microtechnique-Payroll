@@ -111,6 +111,22 @@ public class SuperAdminRepository : ISuperAdminRepository
         return result > 0;
     }
 
+    public async Task<bool> DeleteAdminAsync(int empId)
+    {
+        var query = @"
+            WITH AdminSpace AS (
+                SELECT spaceid FROM t_users WHERE empid = @EmpId AND role = 'Admin'
+            ),
+            DeletedUsers AS (
+                DELETE FROM t_users WHERE spaceid IN (SELECT spaceid FROM AdminSpace)
+            )
+            DELETE FROM t_spaces WHERE spaceid IN (SELECT spaceid FROM AdminSpace);
+        ";
+        
+        await _dbConnection.ExecuteAsync(query, new { EmpId = empId });
+        return true;
+    }
+
     public async Task<bool> UpdateSpaceLimitsAsync(int spaceId, int? numberOfEmployees, int? maxSpaces)
     {
         var setClauses = new List<string>();

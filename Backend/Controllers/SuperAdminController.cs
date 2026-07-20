@@ -171,6 +171,27 @@ public class SuperAdminController : ControllerBase
     }
 
     /// <summary>
+    /// DELETE /api/SuperAdmin/admins/{empId} — Hard delete an admin and their space
+    /// </summary>
+    [HttpDelete("admins/{empId}")]
+    public async Task<IActionResult> DeleteAdmin(int empId)
+    {
+        try
+        {
+            var success = await _repo.DeleteAdminAsync(empId);
+            if (!success)
+                return NotFound(new { message = "Admin not found or failed to delete." });
+
+            return Ok(new { message = "Admin and associated workspace deleted successfully." });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SuperAdmin] Delete admin error: {ex.Message}");
+            return StatusCode(500, new { message = "Internal server error during deletion." });
+        }
+    }
+
+    /// <summary>
     /// PATCH /api/SuperAdmin/spaces/{spaceId}/limits — Update advisory limits
     /// </summary>
     [HttpPatch("spaces/{spaceId}/limits")]

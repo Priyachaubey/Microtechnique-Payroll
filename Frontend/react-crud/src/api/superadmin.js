@@ -12,6 +12,7 @@ export const superAdminApi = {
   revokeAdmin: (empId, data) => apiClient.patch(`/SuperAdmin/admins/${empId}/revoke`, data),
   updateAdminStatus: (empId, data) => apiClient.patch(`/SuperAdmin/admins/${empId}/status`, data),
   toggleAccess: (empId, data) => apiClient.patch(`/SuperAdmin/admins/${empId}/toggle-status`, data),
+  deleteAdmin: (empId) => apiClient.delete(`/SuperAdmin/admins/${empId}`),
   updateSpaceLimits: (spaceId, data) => apiClient.patch(`/SuperAdmin/spaces/${spaceId}/limits`, data),
   
   saveEmployeePrice: (data) => apiClient.patch('/SuperAdmin/config/employee_price_inr', data),
