@@ -1261,6 +1261,19 @@ app.UseStaticFiles(new StaticFileOptions
 
 // app.UseHttpsRedirection(); // Disabled for local HTTP development — re-enable for production
 
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        var exceptionHandlerPathFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+        var ex = exceptionHandlerPathFeature?.Error;
+        Console.WriteLine($"[GlobalException] {ex?.Message}");
+        await context.Response.WriteAsync($"{{\"message\": \"An unexpected error occurred processing your request.\"}}");
+    });
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

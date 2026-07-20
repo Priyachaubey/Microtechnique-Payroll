@@ -187,7 +187,8 @@ public class SuperAdminController : ControllerBase
         catch (Exception ex)
         {
             Console.WriteLine($"[SuperAdmin] Delete admin error: {ex.Message}");
-            return StatusCode(500, new { message = "Internal server error during deletion." });
+            var detailedError = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+            return StatusCode(500, new { message = $"DB Error: {detailedError}" });
         }
     }
 
