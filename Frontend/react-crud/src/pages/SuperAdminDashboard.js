@@ -1546,10 +1546,17 @@ export default function SuperAdminDashboard() {
                   <input
                     type="number"
                     value={empPrice}
-                    onChange={e => handleSavePrice(parseInt(e.target.value) || 0)}
+                    onChange={e => setEmpPrice(parseInt(e.target.value) || 0)}
                     style={{ width: '100%', padding: '10px 12px', fontSize: 13, border: `1px solid ${C.border}`, borderRadius: 8, background: C.bg, boxSizing: 'border-box' }}
                   />
                 </div>
+                <button 
+                  style={{ ...btn('primary', 'sm'), alignSelf: 'flex-start' }} 
+                  onClick={() => handleSavePricing({ professionalPrice: empPrice, starterPrice: starterPrice })}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? 'Saving...' : 'Save Configuration'}
+                </button>
                 <div style={{ fontSize: 11, color: C.textMuted }}>
                   *Changing this adjusts the default rate billed on future monthly draft cycles for all workspaces.
                 </div>
