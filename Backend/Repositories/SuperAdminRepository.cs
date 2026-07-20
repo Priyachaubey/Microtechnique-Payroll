@@ -114,40 +114,55 @@ public class SuperAdminRepository : ISuperAdminRepository
     public async Task<bool> DeleteAdminAsync(int empId)
     {
         var query = @"
-DO $$ 
-DECLARE 
-    r RECORD;
-    emp_ids INT[];
-    target_spaceid INT;
-BEGIN
-    SELECT spaceid INTO target_spaceid FROM t_users WHERE empid = " + empId + @" AND role = 'Admin';
-    
-    IF target_spaceid IS NULL THEN
-        RETURN;
-    END IF;
+            DO $$ 
+            DECLARE 
+                target_spaceid INT;
+                emp_ids INT[];
+            BEGIN
+                SELECT spaceid INTO target_spaceid FROM t_users WHERE empid = " + empId + @" AND role = 'Admin';
+                
+                IF target_spaceid IS NULL THEN
+                    RETURN;
+                END IF;
 
-    SELECT array_agg(empid) INTO emp_ids FROM t_users WHERE spaceid = target_spaceid;
+                SELECT array_agg(empid) INTO emp_ids FROM t_users WHERE spaceid = target_spaceid;
 
-    IF emp_ids IS NOT NULL THEN
-        FOR r IN 
-            SELECT table_name FROM information_schema.columns 
-            WHERE column_name = 'empid' AND table_schema = 'public' AND table_name != 't_users'
-        LOOP
-            EXECUTE 'DELETE FROM ' || quote_ident(r.table_name) || ' WHERE empid = ANY($1)' USING emp_ids;
-        END LOOP;
-    END IF;
+                IF emp_ids IS NOT NULL THEN
+                    DELETE FROM t_employee_screenshot_logs WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_employee_video_logs WHERE empid = ANY(emp_ids);
+                    DELETE FROM screenshot_config WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_incentives WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_employee_performance WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_attendance WHERE empid = ANY(emp_ids);
+                    DELETE FROM employeebreaks WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_leaves WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_worklogs WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_employeesalary WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_allowances WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_deductions WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_payrollpayments WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_payslips WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_otp WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_emp_documents WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_employeewarnings WHERE empid = ANY(emp_ids);
+                    DELETE FROM t_wfh_permissions WHERE empid = ANY(emp_ids);
+                    DELETE FROM allow_camera_dates WHERE empid = ANY(emp_ids);
+                END IF;
 
-    FOR r IN 
-        SELECT table_name FROM information_schema.columns 
-        WHERE column_name = 'spaceid' AND table_schema = 'public' AND table_name != 't_spaces' AND table_name != 't_users'
-    LOOP
-        EXECUTE 'DELETE FROM ' || quote_ident(r.table_name) || ' WHERE spaceid = $1' USING target_spaceid;
-    END LOOP;
+                DELETE FROM t_project_files WHERE projectid IN (SELECT projectid FROM t_projects WHERE spaceid = target_spaceid);
+                DELETE FROM t_projecttasks WHERE projectid IN (SELECT projectid FROM t_projects WHERE spaceid = target_spaceid);
+                DELETE FROM t_projects WHERE spaceid = target_spaceid;
 
-    DELETE FROM t_users WHERE spaceid = target_spaceid;
-    DELETE FROM t_spaces WHERE spaceid = target_spaceid;
-END $$;
-";
+                DELETE FROM t_space_leave_config WHERE spaceid = target_spaceid;
+                DELETE FROM t_contractpayments WHERE spaceid = target_spaceid;
+                DELETE FROM t_notices WHERE spaceid = target_spaceid;
+                DELETE FROM t_payslip_settings WHERE spaceid = target_spaceid;
+                DELETE FROM t_holidays WHERE spaceid = target_spaceid;
+
+                DELETE FROM t_users WHERE spaceid = target_spaceid;
+                DELETE FROM t_spaces WHERE spaceid = target_spaceid;
+            END $$;
+        ";
         
         await _dbConnection.ExecuteAsync(query);
         return true;
