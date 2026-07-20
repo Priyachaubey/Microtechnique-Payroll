@@ -114,16 +114,42 @@ public class SuperAdminRepository : ISuperAdminRepository
     public async Task<bool> DeleteAdminAsync(int empId)
     {
         var query = @"
-            WITH AdminSpace AS (
-                SELECT spaceid FROM t_users WHERE empid = @EmpId AND role = 'Admin'
-            ),
-            DeletedUsers AS (
-                DELETE FROM t_users WHERE spaceid IN (SELECT spaceid FROM AdminSpace)
-            )
-            DELETE FROM t_spaces WHERE spaceid IN (SELECT spaceid FROM AdminSpace);
-        ";
+DO $$ 
+DECLARE 
+    r RECORD;
+    emp_ids INT[];
+    target_spaceid INT;
+BEGIN
+    SELECT spaceid INTO target_spaceid FROM t_users WHERE empid = " + empId + @" AND role = 'Admin';
+    
+    IF target_spaceid IS NULL THEN
+        RETURN;
+    END IF;
+
+    SELECT array_agg(empid) INTO emp_ids FROM t_users WHERE spaceid = target_spaceid;
+
+    IF emp_ids IS NOT NULL THEN
+        FOR r IN 
+            SELECT table_name FROM information_schema.columns 
+            WHERE column_name = 'empid' AND table_schema = 'public' AND table_name != 't_users'
+        LOOP
+            EXECUTE 'DELETE FROM ' || quote_ident(r.table_name) || ' WHERE empid = ANY($1)' USING emp_ids;
+        END LOOP;
+    END IF;
+
+    FOR r IN 
+        SELECT table_name FROM information_schema.columns 
+        WHERE column_name = 'spaceid' AND table_schema = 'public' AND table_name != 't_spaces' AND table_name != 't_users'
+    LOOP
+        EXECUTE 'DELETE FROM ' || quote_ident(r.table_name) || ' WHERE spaceid = $1' USING target_spaceid;
+    END LOOP;
+
+    DELETE FROM t_users WHERE spaceid = target_spaceid;
+    DELETE FROM t_spaces WHERE spaceid = target_spaceid;
+END $$;
+";
         
-        await _dbConnection.ExecuteAsync(query, new { EmpId = empId });
+        await _dbConnection.ExecuteAsync(query);
         return true;
     }
 
