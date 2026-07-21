@@ -355,7 +355,7 @@ public class AuthController : ControllerBase
                 bool useGlobalResend = true;
 
                 // Try to use tenant SMTP settings if not SuperAdmin/Admin
-                if (!isSuperAdmin && user != null && user.SpaceId.HasValue)
+                if (!isSuperAdmin && user != null && user.Role != "Admin" && user.SpaceId.HasValue)
                 {
                     var spaceQuery = "SELECT smtp_host, smtp_port, smtp_username, smtp_password, smtp_from_email FROM t_spaces WHERE spaceid = @SpaceId";
                     var spaceSmtp = await Dapper.SqlMapper.QueryFirstOrDefaultAsync<dynamic>(_dbConnection, spaceQuery, new { SpaceId = user.SpaceId });
@@ -397,19 +397,44 @@ public class AuthController : ControllerBase
 
                 if (useGlobalResend)
                 {
-                    var message = new Resend.EmailMessage();
-                    message.From = "VeriFind <microtechniqueit@gmail.com>"; // Global SuperAdmin/Admin Email
-                    message.To.Add(targetEmail);
-                    message.Subject = "Password Reset OTP";
-                    message.HtmlBody = $@"
-                        <div style='font-family:sans-serif'>
-                            <h2>Your OTP Code</h2>
-                            <h1>{otp}</h1>
-                            <p>This OTP is valid for {(isSuperAdmin ? "30" : "5")} minutes.</p>
-                        </div>";
+                    var smtpHost = _configuration["Smtp:Host"] ?? "smtp.gmail.com";
+                    var smtpPort = int.TryParse(_configuration["Smtp:Port"], out var p) ? p : 587;
+                    var smtpUser = _configuration["Smtp:Username"];
+                    var smtpPass = _configuration["Smtp:Password"];
+                    var smtpFrom = _configuration["Smtp:FromEmail"] ?? smtpUser ?? "support@microtechnique.com";
 
-                    await _resend.EmailSendAsync(message);
-                    Console.WriteLine($"[Resend SDK] Successfully sent password reset OTP to {targetEmail}. OTP: {otp}");
+                    if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPass))
+                    {
+                        Console.WriteLine("[Global SMTP] Missing credentials in appsettings.json! Cannot send OTP.");
+                    }
+                    else
+                    {
+                        var emailMessage = new MimeKit.MimeMessage();
+                        emailMessage.From.Add(new MimeKit.MailboxAddress("Support", smtpFrom));
+                        emailMessage.To.Add(new MimeKit.MailboxAddress("", targetEmail));
+                        emailMessage.Subject = "Password Reset OTP";
+                        
+                        var bodyBuilder = new MimeKit.BodyBuilder
+                        {
+                            HtmlBody = $@"
+                                <div style='font-family:sans-serif'>
+                                    <h2>Your OTP Code</h2>
+                                    <h1>{otp}</h1>
+                                    <p>This OTP is valid for {(isSuperAdmin ? "30" : "5")} minutes.</p>
+                                </div>"
+                        };
+                        emailMessage.Body = bodyBuilder.ToMessageBody();
+
+                        using (var client = new MailKit.Net.Smtp.SmtpClient())
+                        {
+                            await client.ConnectAsync(smtpHost, smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+                            await client.AuthenticateAsync(smtpUser, smtpPass);
+                            await client.SendAsync(emailMessage);
+                            await client.DisconnectAsync(true);
+                        }
+                        
+                        Console.WriteLine($"[Global SMTP] Successfully sent password reset OTP to {targetEmail}. OTP: {otp}");
+                    }
                 }
             }
             catch (Exception ex)
