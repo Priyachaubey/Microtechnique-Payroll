@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
+using System.Linq;
 using Dapper;
 
 public class SuperAdminRepository : ISuperAdminRepository
