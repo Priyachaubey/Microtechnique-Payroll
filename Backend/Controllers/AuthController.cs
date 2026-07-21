@@ -199,6 +199,13 @@ public class AuthController : ControllerBase
                 return Unauthorized(new { message = "Your account is pending approval by the admin." });
             }
 
+            // If user is deleted by SuperAdmin
+            if (user.Status == "Deleted")
+            {
+                Console.WriteLine($"[Login] BLOCKED - user '{emailForLookup}' (EmpId={user.EmpId}) has Status='Deleted'.");
+                return Unauthorized(new { message = "Please contact Super Admin." });
+            }
+
             // SuperAdmin access control — ONLY for Admin role
             // Employees, TL, Managers are NOT affected
             if (user.Role == "Admin" && !user.StatusBySuperAdmin)

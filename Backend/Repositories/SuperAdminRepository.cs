@@ -30,7 +30,7 @@ public class SuperAdminRepository : ISuperAdminRepository
             (SELECT COUNT(1) FROM t_spaces s WHERE s.adminid = u.empid) AS currentspacecount,
             (SELECT COUNT(1) FROM t_users e INNER JOIN t_spaces s ON e.spaceid = s.spaceid WHERE s.adminid = u.empid AND e.role != 'Admin') AS currentemployeecount
         FROM t_users u
-        WHERE u.role = 'Admin'
+        WHERE u.role = 'Admin' AND u.status != 'Deleted'
         ORDER BY u.email, u.empid DESC";
 
     public async Task<IEnumerable<AdminListItem>> GetAllAdminsAsync()
@@ -114,69 +114,14 @@ public class SuperAdminRepository : ISuperAdminRepository
 
     public async Task<bool> DeleteAdminAsync(int empId)
     {
-        // 1. Get ALL space IDs owned by this admin
-        var spaceIdsQuery = "SELECT spaceid FROM t_spaces WHERE adminid = @EmpId";
-        var targetSpaceIds = (await _dbConnection.QueryAsync<int>(spaceIdsQuery, new { EmpId = empId })).ToList();
-
-        // 2. Get all employee IDs across all these spaces, plus the admin's own ID
-        var empIds = new List<int> { empId };
-        if (targetSpaceIds.Any())
-        {
-            var empIdsQuery = "SELECT empid FROM t_users WHERE spaceid IN @SpaceIds";
-            var spaceEmpIds = await _dbConnection.QueryAsync<int>(empIdsQuery, new { SpaceIds = targetSpaceIds });
-            empIds.AddRange(spaceEmpIds);
-        }
-        empIds = empIds.Distinct().ToList();
-
-        // 3. Delete user-level data for all affected employees
-        if (empIds.Any())
-        {
-            var userTables = new[]
-            {
-                "t_employee_screenshot_logs", "t_employee_video_logs", "screenshot_config",
-                "t_incentives", "t_employee_performance", "t_attendance", "employeebreaks",
-                "t_leaves", "t_worklogs", "t_employeesalary", "t_allowances", "t_deductions",
-                "t_payrollpayments", "t_payslips", "t_otp", "t_emp_documents", "t_employeewarnings",
-                "t_wfh_permissions", "allow_camera_dates"
-            };
-
-            foreach (var table in userTables)
-            {
-                try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE empid IN @EmpIds", new { EmpIds = empIds }); } catch { /* Ignore missing tables */ }
-            }
-        }
-
-        // 4. Delete space-level data
-        if (targetSpaceIds.Any())
-        {
-            var spaceTables = new[]
-            {
-                "t_project_files", "t_projecttasks", "t_projects",
-                "t_space_leave_config", "t_contractpayments", "t_notices",
-                "t_payslip_settings", "t_holidays"
-            };
-
-            foreach (var table in spaceTables)
-            {
-                if (table.StartsWith("t_project"))
-                {
-                    try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE projectid IN (SELECT projectid FROM t_projects WHERE spaceid IN @SpaceIds)", new { SpaceIds = targetSpaceIds }); } catch { }
-                }
-                else
-                {
-                    try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE spaceid IN @SpaceIds", new { SpaceIds = targetSpaceIds }); } catch { }
-                }
-            }
-
-            // Delete users from the spaces (if any are left)
-            await _dbConnection.ExecuteAsync("DELETE FROM t_users WHERE spaceid IN @SpaceIds", new { SpaceIds = targetSpaceIds });
-            // Delete the spaces themselves
-            await _dbConnection.ExecuteAsync("DELETE FROM t_spaces WHERE spaceid IN @SpaceIds", new { SpaceIds = targetSpaceIds });
-        }
-
-        // 5. Finally, delete the admin user record itself (if it wasn't deleted in step 4 because spaceid was null)
-        await _dbConnection.ExecuteAsync("DELETE FROM t_users WHERE empid = @EmpId", new { EmpId = empId });
-
+        // SOFT DELETE: Avoid database constraints by marking the admin and all their employees as Deleted.
+        var query = @"
+            UPDATE t_users 
+            SET status = 'Deleted', statusbysuperadmin = false 
+            WHERE empid = @EmpId 
+               OR spaceid IN (SELECT spaceid FROM t_spaces WHERE adminid = @EmpId)";
+               
+        await _dbConnection.ExecuteAsync(query, new { EmpId = empId });
         return true;
     }
 
