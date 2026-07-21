@@ -113,58 +113,59 @@ public class SuperAdminRepository : ISuperAdminRepository
 
     public async Task<bool> DeleteAdminAsync(int empId)
     {
-        var query = @"
-            DO $$ 
-            DECLARE 
-                target_spaceid INT;
-                emp_ids INT[];
-            BEGIN
-                SELECT spaceid INTO target_spaceid FROM t_users WHERE empid = " + empId + @" AND role = 'Admin';
-                
-                IF target_spaceid IS NULL THEN
-                    RETURN;
-                END IF;
+        // 1. Get the space ID
+        var spaceIdQuery = "SELECT spaceid FROM t_users WHERE empid = @EmpId AND role = 'Admin' LIMIT 1";
+        var targetSpaceId = await _dbConnection.QueryFirstOrDefaultAsync<int?>(spaceIdQuery, new { EmpId = empId });
 
-                SELECT array_agg(empid) INTO emp_ids FROM t_users WHERE spaceid = target_spaceid;
+        if (!targetSpaceId.HasValue)
+            return false;
 
-                IF emp_ids IS NOT NULL THEN
-                    DELETE FROM t_employee_screenshot_logs WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_employee_video_logs WHERE empid = ANY(emp_ids);
-                    DELETE FROM screenshot_config WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_incentives WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_employee_performance WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_attendance WHERE empid = ANY(emp_ids);
-                    DELETE FROM employeebreaks WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_leaves WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_worklogs WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_employeesalary WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_allowances WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_deductions WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_payrollpayments WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_payslips WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_otp WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_emp_documents WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_employeewarnings WHERE empid = ANY(emp_ids);
-                    DELETE FROM t_wfh_permissions WHERE empid = ANY(emp_ids);
-                    DELETE FROM allow_camera_dates WHERE empid = ANY(emp_ids);
-                END IF;
+        // 2. Get all employee IDs in this space
+        var empIdsQuery = "SELECT empid FROM t_users WHERE spaceid = @SpaceId";
+        var empIds = (await _dbConnection.QueryAsync<int>(empIdsQuery, new { SpaceId = targetSpaceId.Value })).ToList();
 
-                DELETE FROM t_project_files WHERE projectid IN (SELECT projectid FROM t_projects WHERE spaceid = target_spaceid);
-                DELETE FROM t_projecttasks WHERE projectid IN (SELECT projectid FROM t_projects WHERE spaceid = target_spaceid);
-                DELETE FROM t_projects WHERE spaceid = target_spaceid;
+        // 3. Delete user-level data
+        if (empIds.Any())
+        {
+            var userTables = new[]
+            {
+                "t_employee_screenshot_logs", "t_employee_video_logs", "screenshot_config",
+                "t_incentives", "t_employee_performance", "t_attendance", "employeebreaks",
+                "t_leaves", "t_worklogs", "t_employeesalary", "t_allowances", "t_deductions",
+                "t_payrollpayments", "t_payslips", "t_otp", "t_emp_documents", "t_employeewarnings",
+                "t_wfh_permissions", "allow_camera_dates"
+            };
 
-                DELETE FROM t_space_leave_config WHERE spaceid = target_spaceid;
-                DELETE FROM t_contractpayments WHERE spaceid = target_spaceid;
-                DELETE FROM t_notices WHERE spaceid = target_spaceid;
-                DELETE FROM t_payslip_settings WHERE spaceid = target_spaceid;
-                DELETE FROM t_holidays WHERE spaceid = target_spaceid;
+            foreach (var table in userTables)
+            {
+                try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE empid = ANY(@EmpIds)", new { EmpIds = empIds }); } catch { /* Ignore missing tables */ }
+            }
+        }
 
-                DELETE FROM t_users WHERE spaceid = target_spaceid;
-                DELETE FROM t_spaces WHERE spaceid = target_spaceid;
-            END $$;
-        ";
-        
-        await _dbConnection.ExecuteAsync(query);
+        // 4. Delete space-level data
+        var spaceTables = new[]
+        {
+            "t_project_files", "t_projecttasks", "t_projects",
+            "t_space_leave_config", "t_contractpayments", "t_notices",
+            "t_payslip_settings", "t_holidays"
+        };
+
+        foreach (var table in spaceTables)
+        {
+            if (table.StartsWith("t_project"))
+            {
+                try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE projectid IN (SELECT projectid FROM t_projects WHERE spaceid = @SpaceId)", new { SpaceId = targetSpaceId.Value }); } catch { }
+            }
+            else
+            {
+                try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE spaceid = @SpaceId", new { SpaceId = targetSpaceId.Value }); } catch { }
+            }
+        }
+
+        // 5. Delete core records
+        await _dbConnection.ExecuteAsync("DELETE FROM t_users WHERE spaceid = @SpaceId", new { SpaceId = targetSpaceId.Value });
+        await _dbConnection.ExecuteAsync("DELETE FROM t_spaces WHERE spaceid = @SpaceId", new { SpaceId = targetSpaceId.Value });
+
         return true;
     }
 
