@@ -113,18 +113,21 @@ public class SuperAdminRepository : ISuperAdminRepository
 
     public async Task<bool> DeleteAdminAsync(int empId)
     {
-        // 1. Get the space ID
-        var spaceIdQuery = "SELECT spaceid FROM t_users WHERE empid = @EmpId AND role = 'Admin' LIMIT 1";
-        var targetSpaceId = await _dbConnection.QueryFirstOrDefaultAsync<int?>(spaceIdQuery, new { EmpId = empId });
+        // 1. Get ALL space IDs owned by this admin
+        var spaceIdsQuery = "SELECT spaceid FROM t_spaces WHERE adminid = @EmpId";
+        var targetSpaceIds = (await _dbConnection.QueryAsync<int>(spaceIdsQuery, new { EmpId = empId })).ToList();
 
-        if (!targetSpaceId.HasValue)
-            return false;
+        // 2. Get all employee IDs across all these spaces, plus the admin's own ID
+        var empIds = new List<int> { empId };
+        if (targetSpaceIds.Any())
+        {
+            var empIdsQuery = "SELECT empid FROM t_users WHERE spaceid = ANY(@SpaceIds)";
+            var spaceEmpIds = await _dbConnection.QueryAsync<int>(empIdsQuery, new { SpaceIds = targetSpaceIds.ToArray() });
+            empIds.AddRange(spaceEmpIds);
+        }
+        empIds = empIds.Distinct().ToList();
 
-        // 2. Get all employee IDs in this space
-        var empIdsQuery = "SELECT empid FROM t_users WHERE spaceid = @SpaceId";
-        var empIds = (await _dbConnection.QueryAsync<int>(empIdsQuery, new { SpaceId = targetSpaceId.Value })).ToList();
-
-        // 3. Delete user-level data
+        // 3. Delete user-level data for all affected employees
         if (empIds.Any())
         {
             var userTables = new[]
@@ -138,33 +141,40 @@ public class SuperAdminRepository : ISuperAdminRepository
 
             foreach (var table in userTables)
             {
-                try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE empid = ANY(@EmpIds)", new { EmpIds = empIds }); } catch { /* Ignore missing tables */ }
+                try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE empid = ANY(@EmpIds)", new { EmpIds = empIds.ToArray() }); } catch { /* Ignore missing tables */ }
             }
         }
 
         // 4. Delete space-level data
-        var spaceTables = new[]
+        if (targetSpaceIds.Any())
         {
-            "t_project_files", "t_projecttasks", "t_projects",
-            "t_space_leave_config", "t_contractpayments", "t_notices",
-            "t_payslip_settings", "t_holidays"
-        };
+            var spaceTables = new[]
+            {
+                "t_project_files", "t_projecttasks", "t_projects",
+                "t_space_leave_config", "t_contractpayments", "t_notices",
+                "t_payslip_settings", "t_holidays"
+            };
 
-        foreach (var table in spaceTables)
-        {
-            if (table.StartsWith("t_project"))
+            foreach (var table in spaceTables)
             {
-                try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE projectid IN (SELECT projectid FROM t_projects WHERE spaceid = @SpaceId)", new { SpaceId = targetSpaceId.Value }); } catch { }
+                if (table.StartsWith("t_project"))
+                {
+                    try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE projectid IN (SELECT projectid FROM t_projects WHERE spaceid = ANY(@SpaceIds))", new { SpaceIds = targetSpaceIds.ToArray() }); } catch { }
+                }
+                else
+                {
+                    try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE spaceid = ANY(@SpaceIds)", new { SpaceIds = targetSpaceIds.ToArray() }); } catch { }
+                }
             }
-            else
-            {
-                try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE spaceid = @SpaceId", new { SpaceId = targetSpaceId.Value }); } catch { }
-            }
+
+            // Delete users from the spaces (if any are left)
+            await _dbConnection.ExecuteAsync("DELETE FROM t_users WHERE spaceid = ANY(@SpaceIds)", new { SpaceIds = targetSpaceIds.ToArray() });
+            // Delete the spaces themselves
+            await _dbConnection.ExecuteAsync("DELETE FROM t_spaces WHERE spaceid = ANY(@SpaceIds)", new { SpaceIds = targetSpaceIds.ToArray() });
         }
 
-        // 5. Delete core records
-        await _dbConnection.ExecuteAsync("DELETE FROM t_users WHERE spaceid = @SpaceId", new { SpaceId = targetSpaceId.Value });
-        await _dbConnection.ExecuteAsync("DELETE FROM t_spaces WHERE spaceid = @SpaceId", new { SpaceId = targetSpaceId.Value });
+        // 5. Finally, delete the admin user record itself (if it wasn't deleted in step 4 because spaceid was null)
+        await _dbConnection.ExecuteAsync("DELETE FROM t_users WHERE empid = @EmpId", new { EmpId = empId });
 
         return true;
     }
