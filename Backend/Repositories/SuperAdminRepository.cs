@@ -122,8 +122,8 @@ public class SuperAdminRepository : ISuperAdminRepository
         var empIds = new List<int> { empId };
         if (targetSpaceIds.Any())
         {
-            var empIdsQuery = "SELECT empid FROM t_users WHERE spaceid = ANY(@SpaceIds)";
-            var spaceEmpIds = await _dbConnection.QueryAsync<int>(empIdsQuery, new { SpaceIds = targetSpaceIds.ToArray() });
+            var empIdsQuery = "SELECT empid FROM t_users WHERE spaceid IN @SpaceIds";
+            var spaceEmpIds = await _dbConnection.QueryAsync<int>(empIdsQuery, new { SpaceIds = targetSpaceIds });
             empIds.AddRange(spaceEmpIds);
         }
         empIds = empIds.Distinct().ToList();
@@ -142,7 +142,7 @@ public class SuperAdminRepository : ISuperAdminRepository
 
             foreach (var table in userTables)
             {
-                try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE empid = ANY(@EmpIds)", new { EmpIds = empIds.ToArray() }); } catch { /* Ignore missing tables */ }
+                try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE empid IN @EmpIds", new { EmpIds = empIds }); } catch { /* Ignore missing tables */ }
             }
         }
 
@@ -160,18 +160,18 @@ public class SuperAdminRepository : ISuperAdminRepository
             {
                 if (table.StartsWith("t_project"))
                 {
-                    try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE projectid IN (SELECT projectid FROM t_projects WHERE spaceid = ANY(@SpaceIds))", new { SpaceIds = targetSpaceIds.ToArray() }); } catch { }
+                    try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE projectid IN (SELECT projectid FROM t_projects WHERE spaceid IN @SpaceIds)", new { SpaceIds = targetSpaceIds }); } catch { }
                 }
                 else
                 {
-                    try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE spaceid = ANY(@SpaceIds)", new { SpaceIds = targetSpaceIds.ToArray() }); } catch { }
+                    try { await _dbConnection.ExecuteAsync($"DELETE FROM {table} WHERE spaceid IN @SpaceIds", new { SpaceIds = targetSpaceIds }); } catch { }
                 }
             }
 
             // Delete users from the spaces (if any are left)
-            await _dbConnection.ExecuteAsync("DELETE FROM t_users WHERE spaceid = ANY(@SpaceIds)", new { SpaceIds = targetSpaceIds.ToArray() });
+            await _dbConnection.ExecuteAsync("DELETE FROM t_users WHERE spaceid IN @SpaceIds", new { SpaceIds = targetSpaceIds });
             // Delete the spaces themselves
-            await _dbConnection.ExecuteAsync("DELETE FROM t_spaces WHERE spaceid = ANY(@SpaceIds)", new { SpaceIds = targetSpaceIds.ToArray() });
+            await _dbConnection.ExecuteAsync("DELETE FROM t_spaces WHERE spaceid IN @SpaceIds", new { SpaceIds = targetSpaceIds });
         }
 
         // 5. Finally, delete the admin user record itself (if it wasn't deleted in step 4 because spaceid was null)
