@@ -155,13 +155,13 @@ public class SuperAdminRepository : ISuperAdminRepository
     {
         var query = @"
             SELECT 
-                (SELECT COUNT(1) FROM t_users WHERE role = 'Admin') AS totaladmins,
+                (SELECT COUNT(1) FROM t_users WHERE role = 'Admin' AND status != 'Deleted') AS totaladmins,
                 (SELECT COUNT(1) FROM t_users WHERE role = 'Admin' AND status = 'Active' AND COALESCE(statusbysuperadmin, FALSE) = TRUE) AS activeadmins,
-                (SELECT COUNT(1) FROM t_users WHERE role = 'Admin' AND COALESCE(statusbysuperadmin, FALSE) = FALSE) AS pendingadmins,
+                (SELECT COUNT(1) FROM t_users WHERE role = 'Admin' AND status != 'Deleted' AND COALESCE(statusbysuperadmin, FALSE) = FALSE) AS pendingadmins,
                 (SELECT COUNT(1) FROM t_users WHERE role = 'Admin' AND status = 'Suspended') AS suspendedadmins,
                 (SELECT COUNT(1) FROM t_users WHERE role = 'Admin' AND status = 'Inactive') AS inactiveadmins,
                 (SELECT COUNT(1) FROM t_spaces) AS totalspaces,
-                (SELECT COUNT(1) FROM t_users WHERE role NOT IN ('Admin', 'SuperAdmin')) AS totalemployees,
+                (SELECT COUNT(1) FROM t_users WHERE role NOT IN ('Admin', 'SuperAdmin') AND status != 'Deleted') AS totalemployees,
                 (SELECT COUNT(1) FROM t_users WHERE role NOT IN ('Admin', 'SuperAdmin') AND status = 'Active') AS activeemployees,
                 (SELECT COUNT(1) FROM t_users WHERE role NOT IN ('Admin', 'SuperAdmin') AND status = 'Pending') AS pendingemployees";
 
