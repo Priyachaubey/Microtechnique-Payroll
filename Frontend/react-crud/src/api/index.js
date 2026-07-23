@@ -25,6 +25,8 @@ export const usersApi = {
 
   updateStatus: (id, status, reason) =>
     apiClient.put(`/User/${id}/status`, { empId: id, status, reason }),
+  deleteUser: (id) =>
+    apiClient.delete(`/User/${id}`),
 };
 
 export const spacesApi = {

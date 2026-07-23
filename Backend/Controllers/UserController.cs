@@ -150,10 +150,11 @@ public class UserController : ControllerBase
     {
         try
         {
+            var callerEmpId = GetEmpId();
             var spaceId = GetSpaceId();
             var role = GetRole();
 
-            var user = await _userService.GetUserByIdAsync(id, spaceId, role);
+            var user = await _userService.GetUserByIdAsync(id, callerEmpId, spaceId, role);
             if (user == null) return NotFound(new { message = "User not found." });
             return Ok(user);
         }
@@ -410,7 +411,7 @@ public class UserController : ControllerBase
             var spaceId = GetSpaceId();
             var role = GetRole();
 
-            var user = await _userService.GetUserByIdAsync(id, spaceId, role);
+            var user = await _userService.GetUserByIdAsync(id, GetEmpId(), spaceId, role);
             if (user == null) return NotFound(new { message = "User not found." });
 
             var newStatus = (user.Status ?? "Active").Equals("Active", StringComparison.OrdinalIgnoreCase) 
@@ -444,7 +445,7 @@ public class UserController : ControllerBase
             var spaceId = GetSpaceId();
             var role = GetRole();
 
-            var user = await _userService.GetUserByIdAsync(id, spaceId, role);
+            var user = await _userService.GetUserByIdAsync(id, GetEmpId(), spaceId, role);
             if (user == null) return NotFound(new { message = "User not found." });
 
             int month = DateTime.UtcNow.Month;

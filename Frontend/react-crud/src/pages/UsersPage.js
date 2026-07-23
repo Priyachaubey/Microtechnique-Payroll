@@ -257,6 +257,18 @@ export default function UsersPage() {
     setStatusReason('');
   };
 
+  const handleDeleteUser = async (emp) => {
+    if (window.confirm(`Are you sure you want to permanently delete employee ${emp.name}? This action cannot be undone.`)) {
+      try {
+        await usersApi.deleteUser(emp.empId);
+        toast.success(`Employee ${emp.name} deleted successfully.`);
+        setUsers(prev => prev.filter(u => u.empId !== emp.empId));
+      } catch (err) {
+        toast.error('Failed to delete employee.');
+      }
+    }
+  };
+
   // WFH Handlers
   const loadWfhPermissions = useCallback(async () => {
     setLoadingWfh(true);
@@ -451,6 +463,7 @@ export default function UsersPage() {
                           <button className="icon-btn" title="Edit" aria-label="Edit employee" onClick={() => { setEditModal(emp); setEditUser({ name: emp.name || '', email: emp.email || '', role: emp.role || 'Employee', spaceId: emp.spaceId || '', departmentId: emp.departmentId || '' }); }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span></button>
                           <button className="icon-btn" title="Warn" aria-label="Issue warning" onClick={() => setWarnModal(emp)} style={{ color: 'var(--warning)' }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>warning</span></button>
                           <button className="icon-btn" title="Change Status" aria-label="Change employee status" onClick={() => { setStatusModal(emp); setNewStatus(displayStatus(emp.status)); setStatusReason(''); }} style={{ color: 'var(--primary-600)' }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>manage_accounts</span></button>
+                          <button className="icon-btn" title="Delete Employee" aria-label="Delete employee" onClick={() => handleDeleteUser(emp)} style={{ color: '#ef4444' }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span></button>
                           <button
                             className="icon-btn"
                             title="View Full Profile"
@@ -527,6 +540,7 @@ export default function UsersPage() {
                       <div style={{ display: 'flex', gap: 4 }}>
                         <button className="icon-btn" aria-label="Warn" onClick={() => setWarnModal(emp)} style={{ color: 'var(--warning)' }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>warning</span></button>
                         <button className="icon-btn" aria-label="Change Status" onClick={() => { setStatusModal(emp); setNewStatus(displayStatus(emp.status)); setStatusReason(''); }} style={{ color: 'var(--primary-600)' }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>manage_accounts</span></button>
+                        <button className="icon-btn" title="Delete Employee" aria-label="Delete employee" onClick={() => handleDeleteUser(emp)} style={{ color: '#ef4444' }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span></button>
                         <button
                           className="icon-btn"
                           title="Add Incentive"

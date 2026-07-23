@@ -34,7 +34,7 @@ namespace Backend.Services
             _spaceRepo = spaceRepo;
         }
 
-        private async Task ValidateAccessAsync(int targetEmpId, int callerSpaceId, string callerRole)
+        private async Task ValidateAccessAsync(int targetEmpId, int callerEmpId, int callerSpaceId, string callerRole)
         {
             if (callerRole == "SuperAdmin") return;
 
@@ -43,8 +43,8 @@ namespace Backend.Services
 
             if (callerRole == "Admin")
             {
-                if (targetEmpId == callerSpaceId) return;
-                var isUnder = await _userRepo.IsUserUnderAdminAsync(targetEmpId, callerSpaceId);
+                if (targetEmpId == callerEmpId) return;
+                var isUnder = await _userRepo.IsUserUnderAdminAsync(targetEmpId, callerEmpId);
                 if (!isUnder)
                 {
                     throw new UnauthorizedAccessException("Employee does not belong to your department scope.");
@@ -64,9 +64,9 @@ namespace Backend.Services
             return await _userRepo.GetUsersByCompanyAsync(empId);
         }
 
-        public async Task<User?> GetUserByIdAsync(int targetEmpId, int callerSpaceId, string callerRole)
+        public async Task<User?> GetUserByIdAsync(int targetEmpId, int callerEmpId, int callerSpaceId, string callerRole)
         {
-            await ValidateAccessAsync(targetEmpId, callerSpaceId, callerRole);
+            await ValidateAccessAsync(targetEmpId, callerEmpId, callerSpaceId, callerRole);
             return await _userRepo.GetUserByIdAsync(targetEmpId);
         }
 
@@ -146,9 +146,9 @@ namespace Backend.Services
                 // Admin can modify bank details and roles, but ensure they remain in the same Space scope
                 if (callerRole != "SuperAdmin")
                 {
-                    if (existing.EmpId != callerSpaceId)
+                    if (existing.EmpId != callerEmpId)
                     {
-                        var isUnder = await _userRepo.IsUserUnderAdminAsync(existing.EmpId, callerSpaceId);
+                        var isUnder = await _userRepo.IsUserUnderAdminAsync(existing.EmpId, callerEmpId);
                         if (!isUnder)
                         {
                             throw new UnauthorizedAccessException("Cannot modify employees outside your space scope.");
@@ -158,7 +158,7 @@ namespace Backend.Services
                     if (user.SpaceId.HasValue && user.SpaceId.Value != existing.SpaceId)
                     {
                         var space = await _spaceRepo.GetSpaceByIdAsync(user.SpaceId.Value);
-                        if (space == null || space.AdminId != callerSpaceId)
+                        if (space == null || space.AdminId != callerEmpId)
                         {
                             throw new UnauthorizedAccessException("Cannot move employee to a space outside your management scope.");
                         }
@@ -169,14 +169,14 @@ namespace Backend.Services
             return await _userRepo.UpdateUserAsync(user);
         }
 
-        public async Task<bool> DeleteUserAsync(int targetEmpId, int callerSpaceId, string callerRole)
+        public async Task<bool> DeleteUserAsync(int targetEmpId, int callerEmpId, int callerSpaceId, string callerRole)
         {
             if (callerRole != "Admin" && callerRole != "SuperAdmin")
             {
                 throw new UnauthorizedAccessException("Only Admins can remove employees.");
             }
 
-            await ValidateAccessAsync(targetEmpId, callerSpaceId, callerRole);
+            await ValidateAccessAsync(targetEmpId, callerEmpId, callerSpaceId, callerRole);
             return await _userRepo.DeleteUserAsync(targetEmpId);
         }
 
@@ -187,7 +187,7 @@ namespace Backend.Services
                 throw new UnauthorizedAccessException("Only Admins or Managers can change employee statuses.");
             }
 
-            await ValidateAccessAsync(targetEmpId, callerSpaceId, callerRole);
+            await ValidateAccessAsync(targetEmpId, callerEmpId, callerSpaceId, callerRole);
 
             var result = await _userRepo.UpdateUserStatusAsync(targetEmpId, status);
             if (result && status.Trim().Equals("Inactive", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(reason))
@@ -211,14 +211,14 @@ namespace Backend.Services
                 throw new UnauthorizedAccessException("Only Admins or Managers can issue disciplinary warnings.");
             }
 
-            await ValidateAccessAsync(warning.EmpId ?? 0, callerSpaceId, callerRole);
+            await ValidateAccessAsync(warning.EmpId ?? 0, callerEmpId, callerSpaceId, callerRole);
             warning.IssuedBy = callerEmpId;
             return await _userRepo.AddWarningAsync(warning);
         }
 
-        public async Task<IEnumerable<EmployeeWarning>> GetWarningsByUserIdAsync(int targetEmpId, int callerSpaceId, string callerRole)
+        public async Task<IEnumerable<EmployeeWarning>> GetWarningsByUserIdAsync(int targetEmpId, int callerEmpId, int callerSpaceId, string callerRole)
         {
-            await ValidateAccessAsync(targetEmpId, callerSpaceId, callerRole);
+            await ValidateAccessAsync(targetEmpId, callerEmpId, callerSpaceId, callerRole);
             return await _userRepo.GetWarningsByUserIdAsync(targetEmpId);
         }
 
