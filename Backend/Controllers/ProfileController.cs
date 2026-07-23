@@ -59,7 +59,7 @@ public class ProfileController : ControllerBase
         {
             if (currentEmpId != empId)
             {
-                var targetUser = await _userService.GetUserByIdAsync(empId, spaceId, role);
+                var targetUser = await _userService.GetUserByIdAsync(empId, currentEmpId, spaceId, role);
                 if (targetUser == null) return NotFound();
             }
         }
@@ -115,9 +115,10 @@ public class ProfileController : ControllerBase
         var spaceId = GetSpaceId();
         var role = GetRole();
 
+        var callerEmpId = GetEmpId();
         try
         {
-            var targetUser = await _userService.GetUserByIdAsync(empId, spaceId, role);
+            var targetUser = await _userService.GetUserByIdAsync(empId, callerEmpId, spaceId, role);
             if (targetUser == null) return NotFound(new { message = "Profile not found." });
         }
         catch (UnauthorizedAccessException ex)
@@ -156,7 +157,7 @@ public class ProfileController : ControllerBase
             targetEmpId = empId.Value;
             try
             {
-                var targetUser = await _userService.GetUserByIdAsync(targetEmpId, spaceId, role);
+                var targetUser = await _userService.GetUserByIdAsync(targetEmpId, currentEmpId, spaceId, role);
                 if (targetUser == null) return NotFound(new { message = "Employee not found." });
             }
             catch (UnauthorizedAccessException ex)

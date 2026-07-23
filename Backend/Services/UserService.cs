@@ -10,14 +10,14 @@ namespace Backend.Services
     public interface IUserService
     {
         Task<IEnumerable<User>> GetUsersByCompanyAsync(int empId, int callerSpaceId, string callerRole);
-        Task<User?> GetUserByIdAsync(int targetEmpId, int callerSpaceId, string callerRole);
+        Task<User?> GetUserByIdAsync(int targetEmpId, int callerEmpId, int callerSpaceId, string callerRole);
         Task<IEnumerable<User>> SearchUsersAsync(string query, int empId, int callerSpaceId, string callerRole);
         Task<int> CreateUserAsync(User user, int callerSpaceId, string callerRole);
         Task<bool> UpdateUserAsync(User user, int callerEmpId, int callerSpaceId, string callerRole);
-        Task<bool> DeleteUserAsync(int targetEmpId, int callerSpaceId, string callerRole);
+        Task<bool> DeleteUserAsync(int targetEmpId, int callerEmpId, int callerSpaceId, string callerRole);
         Task<bool> UpdateUserStatusAsync(int targetEmpId, string status, string reason, int callerEmpId, int callerSpaceId, string callerRole);
         Task<int> AddWarningAsync(EmployeeWarning warning, int callerEmpId, int callerSpaceId, string callerRole);
-        Task<IEnumerable<EmployeeWarning>> GetWarningsByUserIdAsync(int targetEmpId, int callerSpaceId, string callerRole);
+        Task<IEnumerable<EmployeeWarning>> GetWarningsByUserIdAsync(int targetEmpId, int callerEmpId, int callerSpaceId, string callerRole);
         Task<IEnumerable<User>> GetUsersBySpaceIdAsync(int spaceId, int callerSpaceId, string callerRole);
         Task<bool> UpdateBackupEmailAsync(int empId, string backupEmail);
         Task<bool> ChangePasswordAsync(int empId, string oldPassword, string newPassword);

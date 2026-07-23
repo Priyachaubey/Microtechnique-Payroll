@@ -272,10 +272,11 @@ public class UserController : ControllerBase
     {
         try
         {
+            var callerEmpId = GetEmpId();
             var spaceId = GetSpaceId();
             var role = GetRole();
 
-            var result = await _userService.DeleteUserAsync(id, spaceId, role);
+            var result = await _userService.DeleteUserAsync(id, callerEmpId, spaceId, role);
             if (!result) return NotFound(new { message = "User not found." });
             return NoContent();
         }
@@ -346,10 +347,11 @@ public class UserController : ControllerBase
     {
         try
         {
+            var callerEmpId = GetEmpId();
             var spaceId = GetSpaceId();
             var role = GetRole();
 
-            var warnings = await _userService.GetWarningsByUserIdAsync(id, spaceId, role);
+            var warnings = await _userService.GetWarningsByUserIdAsync(id, callerEmpId, spaceId, role);
             return Ok(warnings);
         }
         catch (UnauthorizedAccessException ex)
